@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ระบบ P4P กลุ่มงานสังคมสงเคราะห์</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="config.js"></script>
+
+<style>
+  * { font-family: 'Sarabun', sans-serif; }
+  body { background: #f1f5f9; }
+  ::-webkit-scrollbar { height: 8px; width: 8px; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+  .nav-link { transition: all .15s ease; }
+  .nav-link.active { background: #0f766e; color: #fff; }
+  .nav-link:not(.active):hover { background: #f0fdfa; }
+
+  .day-input {
+    width: 40px; text-align: center; padding: 2px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 12px;
+  }
+  .day-input:focus { outline: 2px solid #0d9488; }
+
+  table.p4p-table th, table.p4p-table td { border: 1px solid #cbd5e1; }
+  table.p4p-table th { background: #0f766e; color: white; font-weight: 500; }
+
+  .cat-row td { background: #ecfeff; font-weight: 600; color: #0e7490; }
+
+  .spinner {
+    border: 3px solid #e2e8f0; border-top: 3px solid #0d9488; border-radius: 50%;
+    width: 24px; height: 24px; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .fade-in { animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform:translateY(0);} }
+
+  /* ---------- PRINT STYLES ---------- */
+  @media print {
+    body * { visibility: hidden; }
+    #printArea, #printArea * { visibility: visible; }
+    #printArea {
+      position: absolute; left: 0; top: 0; width: 100%;
+    }
+    .no-print { display: none !important; }
+    @page { size: A4 landscape; margin: 10mm; }
+  }
+  .print-doc { font-size: 12px; }
+  .print-doc table { border-collapse: collapse; width: 100%; }
+  .print-doc th, .print-doc td { border: 1px solid #000; padding: 2px 4px; }
+  .print-doc th { background: #e2e8f0; }
+</style>
+</head>
+<body class="min-h-screen">
+
+  <!-- ============ LOADING OVERLAY ============ -->
+  <div id="globalLoading" class="fixed inset-0 bg-white/70 z-50 hidden flex items-center justify-center">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- ============ LOGIN VIEW ============ -->
+  <div id="view-login" class="min-h-screen flex items-center justify-center px-4">
+    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm fade-in">
+      <div class="text-center mb-6">
+        <img src="https://img2.pic.in.th/Logo-sw6944b6d81ee7918a02.png" alt="โลโก้กลุ่มงานสังคมสงเคราะห์" class="mx-auto w-16 h-16 rounded-full object-cover mb-3 bg-teal-700">
+        <h1 class="text-lg font-semibold text-slate-800">ระบบจัดการบุคลากร</h1>
+        <p class="text-sm text-slate-500 mt-1">กลุ่มงานสังคมสงเคราะห์<br>โรงพยาบาลสมเด็จพระสังฆราช (อมฺพรมหาเถร)</p>
+      </div>
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="text-sm font-medium text-slate-600">ชื่อผู้ใช้</label>
+          <input id="loginUsername" type="text" required class="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-600" placeholder="username">
+        </div>
+        <div>
+          <label class="text-sm font-medium text-slate-600">รหัสผ่าน</label>
+          <input id="loginPassword" type="password" required class="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-600" placeholder="••••••••">
+        </div>
+        <button type="submit" class="w-full bg-teal-700 hover:bg-teal-800 text-white font-medium rounded-lg py-2.5 transition">เข้าสู่ระบบ</button>
+      </form>
+      <p class="text-xs text-slate-400 text-center mt-5">หากยังไม่มีบัญชีผู้ใช้ กรุณาติดต่อผู้ดูแลระบบ</p>
+    </div>
+  </div>
+
+  <!-- ============ APP SHELL ============ -->
+  <div id="view-app" class="hidden min-h-screen">
+    <div class="flex">
+      <!-- Sidebar -->
+      <aside class="no-print w-60 bg-white border-r border-slate-200 min-h-screen fixed top-0 left-0 flex flex-col">
+        <div class="p-4 border-b border-slate-200">
+          <div class="flex items-center gap-2">
+            <img src="https://img2.pic.in.th/Logo-sw6944b6d81ee7918a02.png" alt="โลโก้" class="w-10 h-10 rounded-full object-cover bg-teal-700">
+            <div>
+              <div class="text-sm font-semibold text-slate-800">ระบบจัดการบุคลากร</div>
+              <div class="text-[11px] text-slate-400">กลุ่มงานสังคมสงเคราะห์</div>
+            </div>
+          </div>
+        </div>
+        <nav class="flex-1 p-3 space-y-1 text-sm" id="mainNav">
+          <a data-page="dashboard" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-slate-700">📊 แดชบอร์ด</a>
+          <a data-page="entry" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-slate-700">📝 บันทึกผลการปฏิบัติงาน</a>
+          <a data-page="myreports" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-slate-700">📄 รายงาน P4P บุคคล</a>
+          <a data-page="summary" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-slate-700">💰 สรุปการจ่ายเงิน P4P กลุ่มงาน</a>
+          <a data-page="leaves" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-slate-700">🏖️ ระบบวันลา</a>
+          <a data-page="users" id="navUsers" class="nav-link hidden flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-slate-700">👤 จัดการผู้ใช้</a>
+          <a data-page="account" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-slate-700">🔒 บัญชีของฉัน</a>
+        </nav>
+        <div class="p-3 border-t border-slate-200">
+          <div id="sidebarUserInfo" class="text-xs text-slate-500 mb-2"></div>
+          <button id="btnLogout" class="w-full text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg py-2">ออกจากระบบ</button>
+        </div>
+      </aside>
+
+      <!-- Content -->
+      <main class="flex-1 ml-60 p-6">
+        <div id="pageContent" class="fade-in"></div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ============ PAGE TEMPLATES + PAGE-SPECIFIC JS ============ -->
+  <!-- เดิมฝั่ง Apps Script ใช้ <?!= include('Dashboard'); ?> ฯลฯ ฝัง HTML ของแต่ละหน้า
+       ตอน render ที่เซิร์ฟเวอร์ ตอนนี้ไฟล์หน้าเว็บเหล่านี้ (เนื้อหาเดิมทุกตัวอักษร ไม่มีการแก้ไข)
+       ถูกดึงมาแบบไดนามิกด้วย fetch() จากโฟลเดอร์ pages/ แล้วแทรกเข้าหน้านี้แทน (ดูฟังก์ชัน
+       loadPageTemplates ด้านล่าง) เพื่อให้ยังคงแยกไฟล์ต่อหน้าเหมือนเดิมได้โดยไม่ต้องมี build step -->
+
+  <!-- ============ PRINT AREA (shared) ============ -->
+  <div id="printArea" class="hidden"></div>
+
+  <!-- ============ CORE / SHARED SCRIPTS (utils, auth, router) ============ -->
+  <script>
+// ===================== GLOBAL STATE =====================
+  var APP = {
+    token: null,
+    user: null,
+    tasks: null,
+    THAI_MONTHS: ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+      'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม']
+  };
+
+  function nowBEYear() {
+    return new Date().getFullYear() + 543;
+  }
+
+  function showLoading(show) {
+    document.getElementById('globalLoading').classList.toggle('hidden', !show);
+  }
+
+  function toast(icon, title) {
+    Swal.fire({ toast: true, position: 'top-end', icon: icon, title: title, showConfirmButton: false, timer: 2200, timerProgressBar: true });
+  }
+
+  function fireError(err) {
+    var msg = (err && err.message) ? err.message : String(err);
+    if (msg.indexOf('SESSION_EXPIRED') !== -1) {
+      Swal.fire({ icon: 'warning', title: 'เซสชันหมดอายุ', text: 'กรุณาเข้าสู่ระบบใหม่อีกครั้ง' }).then(function() {
+        doLogout(true);
+      });
+      return;
+    }
+    Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: msg });
+  }
+
+  // ตัวดักจับ error ที่หลุดรอดออกมาโดยไม่มีใครจัดการ (uncaught) เพื่อแสดงตำแหน่งไฟล์/บรรทัดที่แท้จริง
+  // ช่วยวินิจฉัยปัญหาได้จากภาพหน้าจอ โดยไม่ต้องเปิด DevTools
+  window.addEventListener('error', function(e) {
+    var loc = (e.filename ? e.filename.split('/').pop() : 'ไม่ทราบไฟล์') + ':' + e.lineno + ':' + e.colno;
+    Swal.fire({
+      icon: 'error', title: 'เกิดข้อผิดพลาด (ไม่คาดคิด)',
+      html: '<div style="text-align:left;font-size:13px;">' +
+        '<div><b>ข้อความ:</b> ' + (e.message || '') + '</div>' +
+        '<div><b>ตำแหน่ง:</b> ' + loc + '</div>' +
+        '<div style="margin-top:6px;color:#64748b;">กรุณาแคปหน้าจอนี้ทั้งหมด (รวมข้อความด้านบน) ส่งให้ผู้ดูแลระบบ</div>' +
+        '</div>'
+    });
+  });
+  window.addEventListener('unhandledrejection', function(e) {
+    var msg = (e.reason && e.reason.message) ? e.reason.message : String(e.reason);
+    Swal.fire({
+      icon: 'error', title: 'เกิดข้อผิดพลาด (Promise ไม่ได้ถูกจัดการ)',
+      html: '<div style="text-align:left;font-size:13px;">' +
+        '<div><b>ข้อความ:</b> ' + msg + '</div>' +
+        '<div style="margin-top:6px;color:#64748b;">กรุณาแคปหน้าจอนี้ทั้งหมด (รวมข้อความด้านบน) ส่งให้ผู้ดูแลระบบ</div>' +
+        '</div>'
+    });
+  });
+
+  /**
+   * เรียก "ข้อมูล" จากฝั่งเซิร์ฟเวอร์ผ่าน Google Apps Script JSON API แบบ Promise
+   * (เดิมใช้ google.script.run — เปลี่ยนมาเป็น fetch() ไปยัง GAS_API_URL แทน
+   * เพื่อให้หน้าเว็บ Static บน GitHub Pages เรียกใช้ได้ โดยพฤติกรรม/สัญญาที่หน้าเว็บ
+   * แต่ละหน้าเห็น — resolve(ผลลัพธ์เดิม) / reject(Error พร้อมข้อความเดิม) — เหมือนเดิมทุกประการ)
+   * ใช้ Content-Type: text/plain เพื่อให้เบราว์เซอร์ถือเป็น "simple request" (ไม่ทำ CORS preflight)
+   * ซึ่ง Apps Script Web App ไม่รองรับการตอบ preflight (OPTIONS) เอง
+   */
+  function callServer(fnName) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return fetch(GAS_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: fnName, args: args })
+    })
+      .then(function(resp) { return resp.json(); })
+      .then(function(res) {
+        if (!res || !res.success) {
+          throw new Error(res && res.error ? res.error : 'เรียกข้อมูลจากเซิร์ฟเวอร์ไม่สำเร็จ');
+        }
+        return res.data;
+      });
+  }
+
+  function fillYearSelect(sel, currentYearBE) {
+    sel.innerHTML = '';
+    for (var y = currentYearBE - 2; y <= currentYearBE + 1; y++) {
+      var opt = document.createElement('option');
+      opt.value = y; opt.textContent = 'พ.ศ. ' + y;
+      if (y === currentYearBE) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+
+  function fillMonthSelect(sel, currentMonth) {
+    sel.innerHTML = '';
+    APP.THAI_MONTHS.forEach(function(m, i) {
+      var opt = document.createElement('option');
+      opt.value = i + 1; opt.textContent = m;
+      if (i + 1 === currentMonth) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  function fillDaySelect(sel, yearBE, month, currentDay) {
+    var yearCE = Number(yearBE) - 543;
+    var nDays = new Date(yearCE, Number(month), 0).getDate();
+    sel.innerHTML = '';
+    for (var d = 1; d <= nDays; d++) {
+      var opt = document.createElement('option');
+      opt.value = d; opt.textContent = 'วันที่ ' + d;
+      if (d === currentDay) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+
+  function numFmt(n, digits) {
+    if (n === null || n === undefined || isNaN(n)) return '-';
+    return Number(n).toLocaleString('th-TH', { minimumFractionDigits: digits || 0, maximumFractionDigits: digits || 2 });
+  }
+
+  async function ensureTasks() {
+    if (APP.tasks) return APP.tasks;
+    APP.tasks = await callServer('getTasks');
+    return APP.tasks;
+  }
+
+  function groupTasksByCategory(tasks) {
+    var groups = [];
+    var map = {};
+    tasks.forEach(function(t) {
+      if (!map[t.catId]) {
+        map[t.catId] = { catId: t.catId, category: t.category, tasks: [] };
+        groups.push(map[t.catId]);
+      }
+      map[t.catId].tasks.push(t);
+    });
+    groups.sort(function(a, b) { return a.catId - b.catId; });
+    return groups;
+  }
+
+  function openPrint(innerHtml, orientation, printTitle) {
+    orientation = orientation || 'landscape';
+    var area = document.getElementById('printArea');
+    area.innerHTML = innerHtml;
+    area.classList.remove('hidden');
+
+    var styleTag = document.getElementById('dynamicPrintPageStyle');
+    if (!styleTag) {
+      styleTag = document.createElement('style');
+      styleTag.id = 'dynamicPrintPageStyle';
+      document.head.appendChild(styleTag);
+    }
+    styleTag.textContent = '@page { size: A4 ' + orientation + '; margin: 10mm; }';
+
+    var originalTitle = document.title;
+    if (printTitle) document.title = printTitle;
+
+    setTimeout(function() {
+      window.print();
+      area.classList.add('hidden');
+      area.innerHTML = '';
+      document.title = originalTitle;
+    }, 150);
+  }
+
+  // ===================== โหลดเทมเพลตของแต่ละหน้า (แทนที่ include() ฝั่ง Apps Script เดิม) =====================
+  var PAGE_FILES = ['Dashboard', 'Entry', 'LeaveRequests', 'MyReports', 'Summary', 'Users', 'Account'];
+
+  function loadPageTemplates() {
+    return Promise.all(PAGE_FILES.map(function(name) {
+      return fetch('pages/' + name + '.html')
+        .then(function(r) {
+          if (!r.ok) throw new Error('โหลดไฟล์หน้า ' + name + '.html ไม่สำเร็จ (HTTP ' + r.status + ')');
+          return r.text();
+        })
+        .then(function(html) {
+          var wrap = document.createElement('div');
+          wrap.innerHTML = html;
+
+          // ย้าย <template> เข้า document.body ตรงๆ (เก็บ id="tpl-xxx" ไว้เหมือนเดิม)
+          wrap.querySelectorAll('template').forEach(function(tpl) {
+            document.body.appendChild(tpl);
+          });
+
+          // สคริปต์ที่แทรกผ่าน innerHTML จะไม่ทำงานอัตโนมัติ ต้องสร้าง <script> ใหม่เพื่อสั่งรันเอง
+          wrap.querySelectorAll('script').forEach(function(oldScript) {
+            var newScript = document.createElement('script');
+            newScript.textContent = oldScript.textContent;
+            document.body.appendChild(newScript);
+          });
+        });
+    }));
+  }
+
+  var templatesReadyPromise = loadPageTemplates().catch(function(err) {
+    Swal.fire({ icon: 'error', title: 'โหลดหน้าเว็บไม่สำเร็จ', text: (err && err.message) ? err.message : String(err) });
+    throw err;
+  });
+
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var username = document.getElementById('loginUsername').value.trim();
+    var password = document.getElementById('loginPassword').value;
+    if (!username || !password) return;
+
+    showLoading(true);
+    callServer('login', username, password).then(function(res) {
+      showLoading(false);
+      if (!res.ok) {
+        toast('error', res.message);
+        return;
+      }
+      APP.token = res.token;
+      APP.user = res.user;
+      sessionStorage.setItem('p4p_token', res.token);
+      enterApp();
+    }).catch(function(err) {
+      showLoading(false);
+      fireError(err);
+    });
+  });
+
+  document.getElementById('btnLogout').addEventListener('click', function() { doLogout(false); });
+
+  function doLogout(silent) {
+    var token = APP.token || sessionStorage.getItem('p4p_token');
+    if (token) {
+      callServer('logout', token).catch(function() {});
+    }
+    sessionStorage.removeItem('p4p_token');
+    APP.token = null; APP.user = null;
+    document.getElementById('view-app').classList.add('hidden');
+    document.getElementById('view-login').classList.remove('hidden');
+    document.getElementById('loginPassword').value = '';
+    if (!silent) toast('success', 'ออกจากระบบแล้ว');
+  }
+
+  function enterApp() {
+    templatesReadyPromise.then(function() {
+      document.getElementById('view-login').classList.add('hidden');
+      document.getElementById('view-app').classList.remove('hidden');
+      document.getElementById('sidebarUserInfo').innerHTML =
+        '<div class="font-medium text-slate-700">' + APP.user.fullName + '</div>' +
+        '<div>' + (APP.user.position || '') + '</div>';
+      if (APP.user.role === 'admin' || APP.user.role === 'head') {
+        document.getElementById('navUsers').classList.remove('hidden');
+      } else {
+        document.getElementById('navUsers').classList.add('hidden');
+      }
+      navigateTo('dashboard');
+    });
+  }
+
+  // ตรวจสอบเซสชันเดิมตอนโหลดหน้า
+  window.addEventListener('load', function() {
+    var token = sessionStorage.getItem('p4p_token');
+    if (!token) return;
+    showLoading(true);
+    callServer('checkSession', token).then(function(res) {
+      showLoading(false);
+      if (res.ok) {
+        APP.token = token;
+        APP.user = res.user;
+        enterApp();
+      } else {
+        sessionStorage.removeItem('p4p_token');
+      }
+    }).catch(function() {
+      showLoading(false);
+      sessionStorage.removeItem('p4p_token');
+    });
+  });
+
+var CURRENT_PAGE = null;
+
+  document.getElementById('mainNav').addEventListener('click', function(e) {
+    var link = e.target.closest('[data-page]');
+    if (!link) return;
+    navigateTo(link.getAttribute('data-page'));
+  });
+
+  function navigateTo(page) {
+    if (page === 'users' && !(APP.user.role === 'admin' || APP.user.role === 'head')) {
+      toast('error', 'ไม่มีสิทธิ์เข้าถึงหน้านี้');
+      return;
+    }
+
+    var tpl = document.getElementById('tpl-' + page);
+    var content = document.getElementById('pageContent');
+
+    if (!tpl) {
+      content.innerHTML =
+        '<div class="bg-rose-50 border border-rose-200 text-rose-700 rounded-xl p-5 text-sm">' +
+        '<div class="font-semibold mb-1">ไม่พบหน้า "' + page + '"</div>' +
+        '<div>สาเหตุที่พบบ่อยที่สุด: ไฟล์ pages/' + page + '.html ยังไม่ถูกอัปโหลดขึ้น GitHub Pages หรือชื่อไฟล์ไม่ตรงกัน<br>' +
+        'กรุณาตรวจสอบว่ามีไฟล์ pages/' + page + '.html และรีเฟรชหน้านี้อีกครั้ง</div>' +
+        '</div>';
+      return;
+    }
+
+    CURRENT_PAGE = page;
+
+    // update nav active state
+    document.querySelectorAll('#mainNav a').forEach(function(a) {
+      a.classList.toggle('active', a.getAttribute('data-page') === page);
+    });
+
+    content.innerHTML = '';
+    content.appendChild(tpl.content.cloneNode(true));
+    content.classList.remove('fade-in');
+    void content.offsetWidth;
+    content.classList.add('fade-in');
+
+    try {
+      switch (page) {
+        case 'dashboard': initDashboardPage(); break;
+        case 'entry': initEntryPage(); break;
+        case 'leaves': initLeavesPage(); break;
+        case 'myreports': initMyReportsPage(); break;
+        case 'summary': initSummaryPage(); break;
+        case 'users': initUsersPage(); break;
+        case 'account': initAccountPage(); break;
+      }
+    } catch (err) {
+      showLoading(false);
+      fireError(err);
+    }
+  }
+  </script>
+
+</body>
+</html>

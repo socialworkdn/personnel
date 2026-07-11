@@ -1,0 +1,183 @@
+<template id="tpl-summary">
+<div>
+  <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+    <div>
+      <h1 class="text-xl font-bold text-slate-800">สรุปการจ่ายเงินตามผลการปฏิบัติงาน (P4P)</h1>
+      <p class="text-sm text-slate-500">ของกลุ่มงานสังคมสงเคราะห์ ทุกคนในระบบสามารถดูได้</p>
+    </div>
+    <div class="flex gap-2 items-center bg-white rounded-xl shadow-sm p-2 no-print flex-wrap">
+      <select id="summaryYear" class="border border-slate-300 rounded-lg px-2 py-1.5 text-sm"></select>
+      <select id="summaryMonth" class="border border-slate-300 rounded-lg px-2 py-1.5 text-sm"></select>
+      <button id="btnLoadSummary" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm rounded-lg px-3 py-1.5">แสดงข้อมูล</button>
+      <button id="btnPrintSummary" class="bg-teal-700 hover:bg-teal-800 text-white text-sm rounded-lg px-3 py-1.5">🖨️ พิมพ์</button>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+    <div class="flex flex-wrap gap-4 items-end">
+      <div>
+        <label class="text-xs text-slate-500">จำนวนเงินที่จัดสรรลงกลุ่ม (บาท)</label>
+        <div class="flex gap-2 mt-1">
+          <input id="summaryBudget" type="number" step="0.01" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm w-40" placeholder="0.00">
+          <button id="btnSaveBudget" class="no-print bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg px-3 py-1.5">บันทึก</button>
+        </div>
+      </div>
+      <div class="text-sm text-slate-600">รวมส่วนเกินแต้มทั้งหมด: <span id="summaryTotalSurplus" class="font-semibold">-</span> แต้ม</div>
+      <div class="text-sm text-slate-600">ค่าเฉลี่ยเงิน/1 แต้ม: <span id="summaryRate" class="font-semibold">-</span> บาท</div>
+      <div class="text-sm text-slate-600">รวมเงินที่จ่ายจริง: <span id="summaryTotalAmount" class="font-semibold">-</span> บาท</div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm p-4 overflow-x-auto">
+    <table class="w-full text-sm p4p-table">
+      <thead>
+        <tr>
+          <th class="px-2 py-2">ลำดับ</th>
+          <th class="px-2 py-2 text-left">ชื่อ-นามสกุล</th>
+          <th class="px-2 py-2">ตำแหน่ง</th>
+          <th class="px-2 py-2">แต้มประกันขั้นต่ำ</th>
+          <th class="px-2 py-2">แต้มพิเศษผู้บริหาร</th>
+          <th class="px-2 py-2">แต้มบริหารและวิชาการ</th>
+          <th class="px-2 py-2">แต้มบริการ</th>
+          <th class="px-2 py-2">รวมแต้มทั้งหมด</th>
+          <th class="px-2 py-2">ส่วนเกินของแต้ม</th>
+          <th class="px-2 py-2">จำนวนเงินที่ได้รับ</th>
+        </tr>
+      </thead>
+      <tbody id="summaryTableBody"></tbody>
+    </table>
+  </div>
+</div>
+</template>
+
+<script>
+  var _lastSummary = null;
+
+  function initSummaryPage() {
+    var now = new Date();
+    fillYearSelect(document.getElementById('summaryYear'), nowBEYear());
+    fillMonthSelect(document.getElementById('summaryMonth'), now.getMonth() + 1);
+
+    document.getElementById('btnLoadSummary').addEventListener('click', loadSummary);
+    document.getElementById('btnPrintSummary').addEventListener('click', printSummary);
+
+    var canEditBudget = (APP.user.role === 'admin' || APP.user.role === 'head');
+    document.getElementById('summaryBudget').readOnly = !canEditBudget;
+    if (canEditBudget) {
+      document.getElementById('btnSaveBudget').addEventListener('click', saveBudget);
+    } else {
+      document.getElementById('btnSaveBudget').classList.add('hidden');
+    }
+
+    loadSummary();
+  }
+
+  function loadSummary() {
+    var yearBE = document.getElementById('summaryYear').value;
+    var month = document.getElementById('summaryMonth').value;
+
+    showLoading(true);
+    callServer('getP4PSummary', APP.token, yearBE, month).then(function(summary) {
+      showLoading(false);
+      _lastSummary = summary;
+      renderSummary(summary);
+    }).catch(function(err) {
+      showLoading(false);
+      fireError(err);
+    });
+  }
+
+  function renderSummary(summary) {
+    document.getElementById('summaryBudget').value = summary.budget;
+    document.getElementById('summaryTotalSurplus').textContent = numFmt(summary.totalSurplus, 2);
+    document.getElementById('summaryRate').textContent = numFmt(summary.rate, 3);
+    document.getElementById('summaryTotalAmount').textContent = numFmt(summary.totalAmount, 2);
+
+    var tbody = document.getElementById('summaryTableBody');
+    tbody.innerHTML = '';
+    summary.staff.forEach(function(r, i) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td class="px-2 py-2 text-center">' + (i + 1) + '</td>' +
+        '<td class="px-2 py-2">' + r.fullName + '</td>' +
+        '<td class="px-2 py-2 text-center">' + (r.position || '') + '</td>' +
+        '<td class="px-2 py-2 text-center">' + numFmt(r.minGuarantee, 2) + '</td>' +
+        '<td class="px-2 py-2 text-center">' + numFmt(r.specialAdminPoints, 2) + '</td>' +
+        '<td class="px-2 py-2 text-center">' + numFmt(r.adminAcademicPoints, 2) + '</td>' +
+        '<td class="px-2 py-2 text-center">' + numFmt(r.servicePoints, 2) + '</td>' +
+        '<td class="px-2 py-2 text-center font-medium">' + numFmt(r.grandTotal, 2) + '</td>' +
+        '<td class="px-2 py-2 text-center">' + numFmt(r.surplus, 2) + '</td>' +
+        '<td class="px-2 py-2 text-center font-semibold text-teal-700">' + numFmt(r.amount, 2) + '</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  function saveBudget() {
+    var yearBE = document.getElementById('summaryYear').value;
+    var month = document.getElementById('summaryMonth').value;
+    var amount = Number(document.getElementById('summaryBudget').value) || 0;
+
+    showLoading(true);
+    callServer('setBudget', APP.token, yearBE, month, amount).then(function() {
+      return loadSummary();
+    }).then(function() {
+      showLoading(false);
+      toast('success', 'บันทึกงบประมาณเรียบร้อยแล้ว');
+    }).catch(function(err) {
+      showLoading(false);
+      fireError(err);
+    });
+  }
+
+  function printSummary() {
+    if (!_lastSummary) return;
+    var s = _lastSummary;
+    var rows = '';
+    s.staff.forEach(function(r, i) {
+      rows += '<tr>' +
+        '<td>' + (i + 1) + '</td>' +
+        '<td style="text-align:left">' + r.fullName + '</td>' +
+        '<td>' + (r.position || '') + '</td>' +
+        '<td>' + numFmt(r.minGuarantee, 2) + '</td>' +
+        '<td>' + numFmt(r.specialAdminPoints, 2) + '</td>' +
+        '<td>' + numFmt(r.adminAcademicPoints, 2) + '</td>' +
+        '<td>' + numFmt(r.servicePoints, 2) + '</td>' +
+        '<td>' + numFmt(r.grandTotal, 2) + '</td>' +
+        '<td>' + numFmt(r.surplus, 2) + '</td>' +
+        '<td>' + numFmt(r.amount, 2) + '</td>' +
+        '<td></td><td></td></tr>';
+    });
+
+    var html =
+      '<div class="print-doc">' +
+      '<div style="text-align:center;font-weight:700;font-size:15px;">แบบฟอร์มสรุปการจ่ายเงินตามผลการปฏิบัติงาน (P4P) ประจำเดือน ' + s.monthName + ' พ.ศ. ' + s.yearBE + '</div>' +
+      '<div style="text-align:center;margin-bottom:4px;">หน่วยงาน.........กลุ่มงานสังคมสงเคราะห์........กลุ่มภารกิจด้านบริการทุติยภูมิและตติยภูมิ...จำนวนเงินที่จัดสรรลงกลุ่ม ' + numFmt(s.budget,2) + ' บาท</div>' +
+      '<div style="text-align:center;margin-bottom:8px;">รวมส่วนเกินของแต้มทั้งหมด ' + numFmt(s.totalSurplus,2) + ' แต้ม &nbsp;&nbsp; ค่าเฉลี่ยของเงิน/1 แต้ม = ' + numFmt(s.rate,3) + ' บาท &nbsp;&nbsp; รวมจำนวนเงินที่ได้รับ ' + numFmt(s.totalAmount,2) + ' บาท</div>' +
+      '<table><thead>' +
+      '<tr>' +
+        '<th rowspan="2">ลำดับ</th>' +
+        '<th rowspan="2">ชื่อ-นามสกุล</th>' +
+        '<th rowspan="2">ตำแหน่ง</th>' +
+        '<th rowspan="2">แต้มประกันขั้นต่ำ</th>' +
+        '<th colspan="3">แต้มที่ได้</th>' +
+        '<th rowspan="2">รวมแต้มทั้งหมด</th>' +
+        '<th rowspan="2">ส่วนเกินของแต้ม</th>' +
+        '<th rowspan="2">จำนวนเงินที่ได้รับ</th>' +
+        '<th rowspan="2">ลายเซ็น</th>' +
+        '<th rowspan="2">หมายเหตุ</th>' +
+      '</tr>' +
+      '<tr><th>แต้มพิเศษผู้บริหาร</th><th>แต้มบริหารและวิชาการ</th><th>แต้มบริการ</th></tr>' +
+      '</thead><tbody>' + rows + '</tbody></table>' +
+      '<div style="display:flex;justify-content:space-between;margin-top:50px;">' +
+        '<div style="text-align:center;width:31%;">…………………………………<br>( นายสถาพร  อิ่มเอม )<br>นักสังคมสงเคราะห์ชำนาญการ</div>' +
+        '<div style="text-align:center;width:31%;">…………………………………<br>( นางบุปผา  เจริญสิน )<br>นายแพทย์เชี่ยวชาญ(ด้านเวชกรรมสาขากุมารเวชกรรม) <br>หัวหน้ากลุ่มภารกิจด้านบริการทุติยภูมิและตติยภูมิ</div>' +
+        '<div style="text-align:center;width:31%;">…………………………………<br>( &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; )<br>หัวหน้ากลุ่มงานการเงิน</div>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:flex-end;margin-top:50px;">' +
+        '<div style="text-align:center;width:31%;">…………………………………<br>( นายสุภเวช ชัยทัศน์ )<br>คณะกรรมการพิจารณาค่าภาระงาน</div>' +
+      '</div>' +
+      '</div>';
+
+    openPrint(html, 'landscape', 'สรุปการจ่ายเงินP4P_' + s.monthName + s.yearBE);
+  }
+</script>

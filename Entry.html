@@ -1,0 +1,355 @@
+<template id="tpl-entry">
+<div>
+  <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+    <div>
+      <h1 class="text-xl font-bold text-slate-800">บันทึกผลการปฏิบัติงานประจำวัน</h1>
+      <p class="text-sm text-slate-500">แบบบันทึกการจ่ายค่าตอบแทนตามผลการปฏิบัติงาน (รายบุคคล)</p>
+    </div>
+    <div class="flex gap-2 items-center bg-white rounded-xl shadow-sm p-2 no-print flex-wrap">
+      <select id="entryYear" class="border border-slate-300 rounded-lg px-2 py-1.5 text-sm"></select>
+      <select id="entryMonth" class="border border-slate-300 rounded-lg px-2 py-1.5 text-sm"></select>
+      <select id="entryDay" class="border border-slate-300 rounded-lg px-2 py-1.5 text-sm"></select>
+      <button id="btnLoadDay" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm rounded-lg px-3 py-1.5">โหลดข้อมูล</button>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div class="flex items-center gap-3 flex-wrap">
+        <label class="text-sm font-medium text-slate-700">สถานะวันนี้:</label>
+        <span id="entryStatusBadge" class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-500">-</span>
+      </div>
+      <button id="btnGoToLeavePage" class="hidden no-print text-sm text-teal-700 hover:text-teal-900 font-medium">+ ยื่นใบลาสำหรับวันนี้</button>
+    </div>
+    <p id="entryLeaveHint" class="hidden text-xs text-amber-600 mt-2">วันนี้ถูกล็อกด้วยใบลาที่ยื่นไว้ จึงไม่สามารถกรอกผลการปฏิบัติงานได้ — หากต้องการกรอกผลงาน กรุณาไปที่หน้า "ระบบวันลา" เพื่อยกเลิกใบลานี้ก่อน</p>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm p-4">
+    <div class="flex items-center justify-between mb-3">
+      <div class="text-sm text-slate-500">กรอกจำนวนที่ปฏิบัติงานของ <span id="entryDayLabel" class="font-semibold text-teal-700">-</span> เฉพาะรายการที่มีการปฏิบัติงานจริง</div>
+      <div class="text-sm font-semibold text-slate-700">รวมแต้มวันนี้: <span id="entryDayTotal" class="text-teal-700">0</span></div>
+    </div>
+    <div id="entryTableWrap" class="overflow-x-auto max-h-[60vh] overflow-y-auto border border-slate-200 rounded-lg">
+      <table class="w-full text-sm p4p-table">
+        <thead class="sticky top-0 z-10">
+          <tr>
+            <th class="px-2 py-2 text-left w-10">#</th>
+            <th class="px-2 py-2 text-left">ภารกิจ</th>
+            <th class="px-2 py-2">หน่วยนับ</th>
+            <th class="px-2 py-2 w-24">เวลาเฉลี่ย (นาที)</th>
+            <th class="px-2 py-2">แต้ม/หน่วย</th>
+            <th class="px-2 py-2 w-24">จำนวน</th>
+            <th class="px-2 py-2 w-24">แต้มที่ได้</th>
+            <th class="px-2 py-2 w-10"></th>
+          </tr>
+        </thead>
+        <tbody id="entryTableBody"></tbody>
+      </table>
+    </div>
+    <div class="flex justify-end mt-4 no-print">
+      <button id="btnSaveDay" class="bg-teal-700 hover:bg-teal-800 text-white font-medium rounded-lg px-6 py-2.5">บันทึกข้อมูลวันนี้</button>
+    </div>
+  </div>
+</div>
+</template>
+
+<script>
+  var _entryTasks = null;      // task list ทั้งหมด (มาตรฐาน + placeholder เผื่อเพิ่มรายการ)
+  var _entryCustomCatIds = []; // รายการ catId ที่อนุญาตให้ "เผื่อเพิ่มรายการ" ได้
+  var _customRowSeq = 0;       // ตัวนับ id แถวชั่วคราวฝั่ง client
+  var _entryHasExistingData = false; // ใช้แสดงป้าย "มีข้อมูลอยู่แล้ว / แก้ไข"
+  var _entryCurrentLeave = null;      // ข้อมูลวันลาของวันที่กำลังดูอยู่ (จากระบบใบลา ถ้ามี)
+
+  function initEntryPage() {
+    var now = new Date();
+    var yearBE = nowBEYear();
+    var month = now.getMonth() + 1;
+    var day = now.getDate();
+
+    var yearSel = document.getElementById('entryYear');
+    var monthSel = document.getElementById('entryMonth');
+    var daySel = document.getElementById('entryDay');
+
+    fillYearSelect(yearSel, yearBE);
+    fillMonthSelect(monthSel, month);
+    fillDaySelect(daySel, yearSel.value, monthSel.value, day);
+
+    yearSel.addEventListener('change', function() { fillDaySelect(daySel, yearSel.value, monthSel.value, 1); });
+    monthSel.addEventListener('change', function() { fillDaySelect(daySel, yearSel.value, monthSel.value, 1); });
+    document.getElementById('btnLoadDay').addEventListener('click', loadEntryDay);
+    document.getElementById('btnSaveDay').addEventListener('click', saveEntryDay);
+    document.getElementById('btnGoToLeavePage').addEventListener('click', function() { navigateTo('leaves'); });
+
+    showLoading(true);
+    ensureTasks().then(function(tasks) {
+      _entryTasks = tasks;
+      renderEntryTable(tasks);
+      return loadEntryDay();
+    }).catch(function(err) {
+      showLoading(false);
+      fireError(err);
+    });
+  }
+
+  /**
+   * เปิด/ปิดการกรอกผลงานตามสถานะการลา (มาจากระบบใบลา ไม่ใช่การเลือกเอง)
+   */
+  function applyLeaveUIState(leave) {
+    var isLeave = !!leave;
+    var wrap = document.getElementById('entryTableWrap');
+    var hint = document.getElementById('entryLeaveHint');
+    var saveBtn = document.getElementById('btnSaveDay');
+    var goLeaveBtn = document.getElementById('btnGoToLeavePage');
+    var badge = document.getElementById('entryStatusBadge');
+
+    wrap.querySelectorAll('input').forEach(function(input) { input.disabled = isLeave; });
+    wrap.classList.toggle('opacity-50', isLeave);
+    wrap.classList.toggle('pointer-events-none', isLeave);
+    hint.classList.toggle('hidden', !isLeave);
+    saveBtn.classList.toggle('hidden', isLeave);
+    goLeaveBtn.classList.toggle('hidden', isLeave);
+
+    if (isLeave) {
+      badge.textContent = 'วันลา: ' + leave.leaveType + ' (ใบลาเลขที่ ' + leave.requestId + ', สถานะ: ' + leave.status + ')';
+      badge.className = 'text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700';
+    }
+  }
+
+
+  function renderEntryTable(tasks) {
+    var groups = groupTasksByCategory(tasks);
+    var tbody = document.getElementById('entryTableBody');
+    tbody.innerHTML = '';
+    _entryCustomCatIds = [];
+    var rowIdx = 0;
+
+    tbody.addEventListener('click', function(e) {
+      var addBtn = e.target.closest('.btn-add-custom');
+      if (addBtn) { addCustomRow(Number(addBtn.dataset.catId), null); recalcEntryTotal(); return; }
+      var delBtn = e.target.closest('.btn-del-custom');
+      if (delBtn) { delBtn.closest('tr').remove(); recalcEntryTotal(); return; }
+    });
+
+    tbody.addEventListener('input', function(e) {
+      var tr = e.target.closest('tr');
+      if (!tr) return;
+      if (tr.classList.contains('custom-row')) {
+        recalcCustomRow(tr);
+        recalcEntryTotal();
+      } else if (e.target.classList.contains('qty-input')) {
+        recalcEntryRow(tr);
+        recalcEntryTotal();
+      }
+    });
+
+    groups.forEach(function(g) {
+      var standardTasks = g.tasks.filter(function(t) { return !t.isCustom; });
+      var allowsCustom = g.tasks.some(function(t) { return t.isCustom; });
+
+      var catTr = document.createElement('tr');
+      catTr.className = 'cat-row';
+      catTr.innerHTML = '<td colspan="8" class="px-2 py-1.5">' + g.category + '</td>';
+      tbody.appendChild(catTr);
+
+      standardTasks.forEach(function(t) {
+        rowIdx++;
+        var tr = document.createElement('tr');
+        tr.dataset.taskId = t.taskId;
+        tr.innerHTML =
+          '<td class="px-2 py-1.5 text-center text-slate-400">' + rowIdx + '</td>' +
+          '<td class="px-2 py-1.5">' + t.name + '</td>' +
+          '<td class="px-2 py-1.5 text-center text-xs text-slate-500">' + (t.unit || '') + '</td>' +
+          '<td class="px-2 py-1.5 text-center text-xs text-slate-500">' + numFmt(t.avgTime, 0) + '</td>' +
+          '<td class="px-2 py-1.5 text-center text-xs text-slate-500">' + numFmt(t.point, 3) + '</td>' +
+          '<td class="px-2 py-1.5 text-center"><input type="number" step="0.01" class="qty-input day-input"></td>' +
+          '<td class="px-2 py-1.5 text-center points-cell font-medium text-teal-700">0</td>' +
+          '<td class="px-2 py-1.5"></td>';
+        tbody.appendChild(tr);
+      });
+
+      if (allowsCustom) {
+        _entryCustomCatIds.push(g.catId);
+        var addTr = document.createElement('tr');
+        addTr.className = 'custom-add-row';
+        addTr.dataset.catId = g.catId;
+        addTr.innerHTML =
+          '<td class="px-2 py-1.5"></td>' +
+          '<td class="px-2 py-1.5" colspan="7">' +
+            '<button type="button" class="btn-add-custom no-print text-teal-700 hover:text-teal-900 text-xs font-medium" data-cat-id="' + g.catId + '">+ เพิ่มรายการ (เผื่อเพิ่มรายการ)</button>' +
+          '</td>';
+        tbody.appendChild(addTr);
+      }
+    });
+  }
+
+  /**
+   * เพิ่มแถว "เผื่อเพิ่มรายการ" หนึ่งแถวใต้หมวด catId (แทรกไว้ก่อนปุ่ม + เพิ่มรายการ ของหมวดนั้น)
+   * data (ถ้ามี): { name, unit, avgTime, qty } ใช้ตอนโหลดข้อมูลเดิม
+   */
+  function addCustomRow(catId, data) {
+    _customRowSeq++;
+    var rowKey = 'new' + _customRowSeq;
+    var tr = document.createElement('tr');
+    tr.className = 'custom-row';
+    tr.dataset.catId = catId;
+    tr.dataset.rowKey = rowKey;
+
+    var name = data && data.name ? data.name : '';
+    var unit = data && data.unit ? data.unit : '';
+    var avgTime = data && data.avgTime != null ? data.avgTime : '';
+    var qty = data && data.qty != null ? data.qty : '';
+
+    tr.innerHTML =
+      '<td class="px-2 py-1.5 text-center text-slate-400">•</td>' +
+      '<td class="px-2 py-1.5"><input type="text" class="custom-name w-full border border-slate-300 rounded px-2 py-1 text-xs" placeholder="ระบุชื่องาน" value="' + escapeAttr_(name) + '"></td>' +
+      '<td class="px-2 py-1.5"><input type="text" class="custom-unit w-20 border border-slate-300 rounded px-2 py-1 text-xs text-center" placeholder="หน่วยนับ" value="' + escapeAttr_(unit) + '"></td>' +
+      '<td class="px-2 py-1.5 text-center"><input type="number" step="1" class="custom-avgtime day-input" style="width:60px" value="' + avgTime + '"></td>' +
+      '<td class="px-2 py-1.5 text-center custom-point-display text-xs text-slate-500">0.000</td>' +
+      '<td class="px-2 py-1.5 text-center"><input type="number" step="0.01" class="qty-input day-input" value="' + qty + '"></td>' +
+      '<td class="px-2 py-1.5 text-center points-cell font-medium text-teal-700">0</td>' +
+      '<td class="px-2 py-1.5 text-center"><button type="button" class="btn-del-custom no-print text-rose-500 hover:text-rose-700 text-xs">✕</button></td>';
+
+    var addRow = document.querySelector('.custom-add-row[data-cat-id="' + catId + '"]');
+    addRow.parentNode.insertBefore(tr, addRow);
+    recalcCustomRow(tr);
+
+    if (_entryCurrentLeave) {
+      tr.querySelectorAll('input').forEach(function(input) { input.disabled = true; });
+    }
+  }
+
+  function escapeAttr_(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  }
+
+  function recalcEntryRow(tr) {
+    var taskId = Number(tr.dataset.taskId);
+    var task = _entryTasks.filter(function(t) { return t.taskId === taskId; })[0];
+    var qty = Number(tr.querySelector('.qty-input').value) || 0;
+    var pts = qty * task.point;
+    tr.querySelector('.points-cell').textContent = numFmt(pts, 2);
+  }
+
+  function recalcCustomRow(tr) {
+    var avgTime = Number(tr.querySelector('.custom-avgtime').value) || 0;
+    var qty = Number(tr.querySelector('.qty-input').value) || 0;
+    var pointPerUnit = round2Client_(avgTime * 0.143);
+    tr.querySelector('.custom-point-display').textContent = pointPerUnit.toFixed(3);
+    var pts = qty * pointPerUnit;
+    tr.querySelector('.points-cell').textContent = numFmt(pts, 2);
+  }
+
+  function round2Client_(n) { return Math.round((n + Number.EPSILON) * 1000) / 1000; }
+
+  function recalcEntryTotal() {
+    var total = 0;
+    document.querySelectorAll('#entryTableBody tr').forEach(function(tr) {
+      var cell = tr.querySelector('.points-cell');
+      if (cell) total += Number(cell.textContent.replace(/,/g, '')) || 0;
+    });
+    document.getElementById('entryDayTotal').textContent = numFmt(total, 2);
+  }
+
+  function clearCustomRows() {
+    document.querySelectorAll('#entryTableBody tr.custom-row').forEach(function(tr) { tr.remove(); });
+  }
+
+  function loadEntryDay() {
+    var yearBE = document.getElementById('entryYear').value;
+    var month = document.getElementById('entryMonth').value;
+    var day = document.getElementById('entryDay').value;
+    document.getElementById('entryDayLabel').textContent =
+      'วันที่ ' + day + ' ' + APP.THAI_MONTHS[month - 1] + ' พ.ศ. ' + yearBE;
+
+    showLoading(true);
+    return callServer('getDayData', APP.token, yearBE, month, day).then(function(dayData) {
+      showLoading(false);
+
+      // สถานะวันลา (มาจากระบบใบลาเท่านั้น อ่านอย่างเดียว)
+      _entryCurrentLeave = dayData.leave || null;
+      applyLeaveUIState(_entryCurrentLeave);
+
+      // รายการมาตรฐาน
+      var hasAnyData = !!_entryCurrentLeave;
+      document.querySelectorAll('#entryTableBody tr[data-task-id]').forEach(function(tr) {
+        var taskId = Number(tr.dataset.taskId);
+        var qtyInput = tr.querySelector('.qty-input');
+        var qty = dayData.normal ? dayData.normal[taskId] : null;
+        if (qty) hasAnyData = true;
+        qtyInput.value = qty ? qty : '';
+        recalcEntryRow(tr);
+      });
+
+      // เผื่อเพิ่มรายการ: ล้างแถวเดิมแล้วสร้างใหม่ตามข้อมูลที่โหลดมา
+      clearCustomRows();
+      (dayData.custom || []).forEach(function(item) {
+        addCustomRow(item.catId, item);
+        hasAnyData = true;
+      });
+
+      _entryHasExistingData = hasAnyData;
+      if (!_entryCurrentLeave) {
+        var badge = document.getElementById('entryStatusBadge');
+        if (hasAnyData) {
+          badge.textContent = 'ปฏิบัติงานปกติ — มีข้อมูลบันทึกไว้แล้ว (แก้ไขแล้วกดบันทึกซ้ำเพื่ออัปเดต)';
+          badge.className = 'text-xs px-2 py-1 rounded-full bg-teal-100 text-teal-700';
+        } else {
+          badge.textContent = 'ปฏิบัติงานปกติ — ยังไม่มีข้อมูลของวันนี้';
+          badge.className = 'text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-500';
+        }
+      }
+
+      recalcEntryTotal();
+    }).catch(function(err) {
+      showLoading(false);
+      fireError(err);
+    });
+  }
+
+  function saveEntryDay() {
+    if (_entryCurrentLeave) {
+      toast('error', 'วันนี้ถูกล็อกด้วยใบลา ไม่สามารถบันทึกผลงานได้');
+      return;
+    }
+
+    var yearBE = document.getElementById('entryYear').value;
+    var month = document.getElementById('entryMonth').value;
+    var day = document.getElementById('entryDay').value;
+
+    var normal = [];
+    document.querySelectorAll('#entryTableBody tr[data-task-id]').forEach(function(tr) {
+      var taskId = Number(tr.dataset.taskId);
+      var qty = Number(tr.querySelector('.qty-input').value) || 0;
+      if (qty === 0) return;
+      normal.push({ taskId: taskId, qty: qty });
+    });
+
+    var custom = [];
+    var hasIncompleteCustom = false;
+    document.querySelectorAll('#entryTableBody tr.custom-row').forEach(function(tr) {
+      var name = tr.querySelector('.custom-name').value.trim();
+      var unit = tr.querySelector('.custom-unit').value.trim();
+      var avgTime = Number(tr.querySelector('.custom-avgtime').value) || 0;
+      var qty = Number(tr.querySelector('.qty-input').value) || 0;
+      if (!name && qty === 0 && avgTime === 0) return; // แถวว่างสนิท ข้ามได้
+      if (qty > 0 && !name) { hasIncompleteCustom = true; return; }
+      if (qty === 0) return;
+      custom.push({ catId: Number(tr.dataset.catId), name: name, unit: unit, avgTime: avgTime, qty: qty });
+    });
+
+    if (hasIncompleteCustom) {
+      toast('error', 'กรุณาระบุชื่องานของรายการ "เผื่อเพิ่มรายการ" ที่กรอกจำนวนไว้ให้ครบ');
+      return;
+    }
+
+    showLoading(true);
+    callServer('saveDayEntries', APP.token, yearBE, month, day, { normal: normal, custom: custom }).then(function(res) {
+      showLoading(false);
+      toast('success', res.message);
+      loadEntryDay();
+    }).catch(function(err) {
+      showLoading(false);
+      fireError(err);
+    });
+  }
+</script>

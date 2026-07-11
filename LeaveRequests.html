@@ -1,0 +1,396 @@
+<template id="tpl-leaves">
+<div>
+  <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+    <div>
+      <h1 class="text-xl font-bold text-slate-800">ระบบวันลา</h1>
+      <p class="text-sm text-slate-500">ยื่นใบลา / ติดตามสถานะ / พิมพ์แบบฟอร์มใบลาอย่างเป็นทางการ</p>
+    </div>
+    <button id="btnNewLeave" class="bg-teal-700 hover:bg-teal-800 text-white text-sm rounded-lg px-4 py-2">+ ยื่นใบลาใหม่</button>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+    <h2 class="font-semibold text-slate-700 mb-3">📊 สถิติวันลาของฉัน ปีงบประมาณ <span id="leaveStatsFY">-</span> <span class="text-xs text-slate-400 font-normal">(นับเฉพาะที่อนุมัติแล้ว)</span></h2>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="leaveStatsCards"></div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm p-4 overflow-x-auto mb-6">
+    <h2 class="font-semibold text-slate-700 mb-3">ใบลาของฉัน</h2>
+    <table class="w-full text-sm p4p-table">
+      <thead>
+        <tr>
+          <th class="px-2 py-2">เลขที่ใบลา</th>
+          <th class="px-2 py-2">ประเภท</th>
+          <th class="px-2 py-2">วันที่ลา</th>
+          <th class="px-2 py-2">จำนวนวัน</th>
+          <th class="px-2 py-2">สถานะ</th>
+          <th class="px-2 py-2">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody id="myLeaveTableBody"></tbody>
+    </table>
+    <div id="myLeaveEmpty" class="hidden text-center text-sm text-slate-400 py-6">ยังไม่มีใบลาที่ยื่นไว้</div>
+  </div>
+
+  <div id="adminLeaveSection" class="hidden bg-white rounded-xl shadow-sm p-4 overflow-x-auto">
+    <h2 class="font-semibold text-slate-700 mb-3">คำขอลาทั้งหมดในระบบ (สำหรับผู้ดูแล/หัวหน้ากลุ่มงาน)</h2>
+    <table class="w-full text-sm p4p-table">
+      <thead>
+        <tr>
+          <th class="px-2 py-2 text-left">ชื่อ-นามสกุล</th>
+          <th class="px-2 py-2">ประเภท</th>
+          <th class="px-2 py-2">วันที่ลา</th>
+          <th class="px-2 py-2">จำนวนวัน</th>
+          <th class="px-2 py-2 text-left">เหตุผล</th>
+          <th class="px-2 py-2">สถานะ</th>
+          <th class="px-2 py-2">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody id="allLeaveTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Modal: ยื่นใบลาใหม่ -->
+  <div id="leaveModal" class="hidden fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4">
+    <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md fade-in">
+      <h2 class="text-lg font-semibold text-slate-800 mb-4">ยื่นใบลาใหม่</h2>
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs text-slate-500">ประเภทการลา</label>
+          <select id="leaveTypeInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+            <option value="ลาพักผ่อน">ลาพักผ่อน</option>
+            <option value="ลาป่วย">ลาป่วย</option>
+            <option value="ลากิจส่วนตัว">ลากิจส่วนตัว</option>
+            <option value="ลาคลอดบุตร">ลาคลอดบุตร</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-500">วันที่เริ่มลา</label>
+            <input id="leaveStartInput" type="date" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">วันที่สิ้นสุด</label>
+            <input id="leaveEndInput" type="date" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+          </div>
+        </div>
+        <div class="text-xs text-slate-500">รวม <span id="leaveTotalDaysDisplay" class="font-semibold text-teal-700">0</span> วัน</div>
+        <div>
+          <label class="text-xs text-slate-500">เหตุผล / เรื่อง</label>
+          <input id="leaveReasonInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1" placeholder="เช่น พักผ่อนประจำปี, ไม่สบาย">
+        </div>
+        <div>
+          <label class="text-xs text-slate-500">ที่อยู่ที่ติดต่อได้ระหว่างลา</label>
+          <input id="leaveAddressInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+        </div>
+        <div>
+          <label class="text-xs text-slate-500">หมายเลขโทรศัพท์</label>
+          <input id="leavePhoneInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+        </div>
+        <p class="text-xs text-amber-600">เมื่อยื่นใบลาแล้ว ระบบจะล็อกวันที่ดังกล่าวในหน้า "บันทึกผลการปฏิบัติงานประจำวัน" ให้ทันที</p>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button id="btnCancelLeaveModal" class="px-4 py-2 text-sm rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700">ยกเลิก</button>
+        <button id="btnSubmitLeave" class="px-4 py-2 text-sm rounded-lg bg-teal-700 hover:bg-teal-800 text-white">ยื่นใบลา</button>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+
+<script>
+  var _myLeaves = [];
+  var LEAVE_TYPES_CLIENT = ['ลาพักผ่อน', 'ลาป่วย', 'ลากิจส่วนตัว', 'ลาคลอดบุตร'];
+  var _allLeaves = [];
+
+  function initLeavesPage() {
+    document.getElementById('btnNewLeave').addEventListener('click', openLeaveModal);
+    document.getElementById('btnCancelLeaveModal').addEventListener('click', closeLeaveModal);
+    document.getElementById('btnSubmitLeave').addEventListener('click', submitNewLeave);
+    document.getElementById('leaveStartInput').addEventListener('change', updateLeaveTotalDaysDisplay);
+    document.getElementById('leaveEndInput').addEventListener('change', updateLeaveTotalDaysDisplay);
+
+    if (APP.user.role === 'admin' || APP.user.role === 'head') {
+      document.getElementById('adminLeaveSection').classList.remove('hidden');
+      loadAllLeaves();
+    }
+
+    loadMyLeaves();
+    loadMyLeaveStats();
+  }
+
+  function loadMyLeaveStats() {
+    callServer('getMyLeaveStats', APP.token).then(function(stats) {
+      renderMyLeaveStats(stats);
+    }).catch(function(err) { fireError(err); });
+  }
+
+  function renderMyLeaveStats(stats) {
+    document.getElementById('leaveStatsFY').textContent = stats.fiscalYearBE;
+    var cardsEl = document.getElementById('leaveStatsCards');
+    var colors = {
+      'ลาพักผ่อน': 'border-sky-500', 'ลาป่วย': 'border-rose-500',
+      'ลากิจส่วนตัว': 'border-amber-500', 'ลาคลอดบุตร': 'border-purple-500'
+    };
+    cardsEl.innerHTML = '';
+    LEAVE_TYPES_CLIENT.forEach(function(t) {
+      var card = document.createElement('div');
+      card.className = 'bg-slate-50 rounded-lg p-3 border-l-4 ' + (colors[t] || 'border-slate-400');
+      card.innerHTML = '<div class="text-xs text-slate-500">' + t + '</div><div class="text-xl font-bold text-slate-800 mt-1">' + (stats.byType[t] || 0) + ' <span class="text-xs font-normal text-slate-400">วัน</span></div>';
+      cardsEl.appendChild(card);
+    });
+    var totalCard = document.createElement('div');
+    totalCard.className = 'bg-teal-50 rounded-lg p-3 border-l-4 border-teal-600';
+    totalCard.innerHTML = '<div class="text-xs text-slate-500">รวมทั้งหมด</div><div class="text-xl font-bold text-teal-700 mt-1">' + stats.total + ' <span class="text-xs font-normal text-slate-400">วัน</span></div>';
+    cardsEl.appendChild(totalCard);
+  }
+
+  function openLeaveModal() {
+    document.getElementById('leaveTypeInput').value = 'ลาพักผ่อน';
+    document.getElementById('leaveStartInput').value = '';
+    document.getElementById('leaveEndInput').value = '';
+    document.getElementById('leaveReasonInput').value = '';
+    document.getElementById('leaveAddressInput').value = '';
+    document.getElementById('leavePhoneInput').value = '';
+    document.getElementById('leaveTotalDaysDisplay').textContent = '0';
+    document.getElementById('leaveModal').classList.remove('hidden');
+  }
+
+  function closeLeaveModal() {
+    document.getElementById('leaveModal').classList.add('hidden');
+  }
+
+  function updateLeaveTotalDaysDisplay() {
+    var start = document.getElementById('leaveStartInput').value;
+    var end = document.getElementById('leaveEndInput').value;
+    var el = document.getElementById('leaveTotalDaysDisplay');
+    if (!start || !end) { el.textContent = '0'; return; }
+    var d1 = new Date(start), d2 = new Date(end);
+    if (d2 < d1) { el.textContent = '0'; return; }
+    var days = Math.round((d2 - d1) / (24 * 60 * 60 * 1000)) + 1;
+    el.textContent = days;
+  }
+
+  function submitNewLeave() {
+    var payload = {
+      leaveType: document.getElementById('leaveTypeInput').value,
+      startDate: document.getElementById('leaveStartInput').value,
+      endDate: document.getElementById('leaveEndInput').value,
+      reason: document.getElementById('leaveReasonInput').value.trim(),
+      contactAddress: document.getElementById('leaveAddressInput').value.trim(),
+      contactPhone: document.getElementById('leavePhoneInput').value.trim()
+    };
+    if (!payload.startDate || !payload.endDate) {
+      toast('error', 'กรุณาระบุวันที่เริ่มและสิ้นสุดการลา');
+      return;
+    }
+
+    showLoading(true);
+    callServer('submitLeaveRequest', APP.token, payload).then(function(res) {
+      showLoading(false);
+      toast('success', res.message);
+      closeLeaveModal();
+      loadMyLeaves();
+      if (APP.user.role === 'admin' || APP.user.role === 'head') loadAllLeaves();
+    }).catch(function(err) {
+      showLoading(false);
+      fireError(err);
+    });
+  }
+
+  function leaveStatusBadge_(status) {
+    var cls = 'bg-slate-100 text-slate-600';
+    if (status === 'อนุมัติ') cls = 'bg-emerald-100 text-emerald-700';
+    else if (status === 'รออนุมัติ') cls = 'bg-amber-100 text-amber-700';
+    else if (status === 'ไม่อนุมัติ') cls = 'bg-rose-100 text-rose-700';
+    else if (status === 'ยกเลิก') cls = 'bg-slate-200 text-slate-500';
+    return '<span class="text-xs px-2 py-1 rounded-full ' + cls + '">' + status + '</span>';
+  }
+
+  function loadMyLeaves() {
+    showLoading(true);
+    callServer('getMyLeaveRequests', APP.token).then(function(list) {
+      showLoading(false);
+      if (list && list.__error) {
+        Swal.fire({
+          icon: 'error', title: 'พบข้อผิดพลาดจริงในเซิร์ฟเวอร์ (getMyLeaveRequests)',
+          html: '<div style="text-align:left;font-size:12px;"><b>ข้อความ:</b> ' + list.message + '<br><b>Stack:</b><pre style="white-space:pre-wrap;font-size:10px;">' + list.stack + '</pre></div>'
+        });
+        list = [];
+      }
+      if (list === null || list === undefined) {
+        toast('error', 'เซิร์ฟเวอร์ส่งค่าว่าง (null) กลับมาแทนที่จะเป็นรายการใบลา — Code.gs อาจไม่ใช่เวอร์ชันล่าสุด กรุณาวางไฟล์ Code.gs ทับใหม่จากไฟล์ zip แล้ว Save');
+      }
+      list = list || [];
+      _myLeaves = list;
+      renderMyLeaves(list);
+    }).catch(function(err) { showLoading(false); fireError(err); });
+  }
+
+  function renderMyLeaves(list) {
+    var tbody = document.getElementById('myLeaveTableBody');
+    var empty = document.getElementById('myLeaveEmpty');
+    tbody.innerHTML = '';
+    empty.classList.toggle('hidden', list.length > 0);
+
+    list.forEach(function(r) {
+      var tr = document.createElement('tr');
+      var canCancel = (r.status === 'รออนุมัติ' || r.status === 'อนุมัติ');
+      tr.innerHTML =
+        '<td class="px-2 py-2 text-center font-mono text-xs">' + r.requestId + '</td>' +
+        '<td class="px-2 py-2 text-center">' + r.leaveType + '</td>' +
+        '<td class="px-2 py-2 text-center text-xs">' + formatThaiDateRange_(r.startDate, r.endDate) + '</td>' +
+        '<td class="px-2 py-2 text-center">' + r.totalDays + '</td>' +
+        '<td class="px-2 py-2 text-center">' + leaveStatusBadge_(r.status) + '</td>' +
+        '<td class="px-2 py-2 text-center whitespace-nowrap">' +
+          '<button class="text-teal-700 text-xs mr-2 btn-print-leave" data-id="' + r.requestId + '">📄 พิมพ์</button>' +
+          (canCancel ? '<button class="text-rose-600 text-xs btn-cancel-leave" data-id="' + r.requestId + '">ยกเลิก</button>' : '') +
+        '</td>';
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('.btn-print-leave').forEach(function(btn) {
+      btn.addEventListener('click', function() { printLeaveForm(btn.dataset.id); });
+    });
+    tbody.querySelectorAll('.btn-cancel-leave').forEach(function(btn) {
+      btn.addEventListener('click', function() { confirmCancelLeave(btn.dataset.id); });
+    });
+  }
+
+  function loadAllLeaves() {
+    callServer('getAllLeaveRequests', APP.token).then(function(list) {
+      if (list && list.__error) {
+        Swal.fire({
+          icon: 'error', title: 'พบข้อผิดพลาดจริงในเซิร์ฟเวอร์ (getAllLeaveRequests)',
+          html: '<div style="text-align:left;font-size:12px;"><b>ข้อความ:</b> ' + list.message + '<br><b>Stack:</b><pre style="white-space:pre-wrap;font-size:10px;">' + list.stack + '</pre></div>'
+        });
+        list = [];
+      }
+      if (list === null || list === undefined) {
+        toast('error', 'เซิร์ฟเวอร์ส่งค่าว่าง (null) กลับมาแทนที่จะเป็นรายการใบลา — Code.gs อาจไม่ใช่เวอร์ชันล่าสุด กรุณาวางไฟล์ Code.gs ทับใหม่จากไฟล์ zip แล้ว Save');
+      }
+      list = list || [];
+      _allLeaves = list;
+      renderAllLeaves(list);
+    }).catch(function(err) { fireError(err); });
+  }
+
+  function renderAllLeaves(list) {
+    var tbody = document.getElementById('allLeaveTableBody');
+    tbody.innerHTML = '';
+    list.forEach(function(r) {
+      var tr = document.createElement('tr');
+      var canReview = (r.status === 'รออนุมัติ');
+      var canCancel = (r.status === 'รออนุมัติ' || r.status === 'อนุมัติ');
+      tr.innerHTML =
+        '<td class="px-2 py-2">' + r.fullName + '</td>' +
+        '<td class="px-2 py-2 text-center">' + r.leaveType + '</td>' +
+        '<td class="px-2 py-2 text-center text-xs">' + formatThaiDateRange_(r.startDate, r.endDate) + '</td>' +
+        '<td class="px-2 py-2 text-center">' + r.totalDays + '</td>' +
+        '<td class="px-2 py-2 text-xs">' + (r.reason || '') + '</td>' +
+        '<td class="px-2 py-2 text-center">' + leaveStatusBadge_(r.status) + '</td>' +
+        '<td class="px-2 py-2 text-center whitespace-nowrap">' +
+          (canReview ? '<button class="text-emerald-600 text-xs mr-2 btn-approve-leave" data-id="' + r.requestId + '">อนุมัติ</button><button class="text-rose-600 text-xs mr-2 btn-reject-leave" data-id="' + r.requestId + '">ปฏิเสธ</button>' : '') +
+          (canCancel ? '<button class="text-slate-500 text-xs btn-cancel-leave-admin" data-id="' + r.requestId + '">ยกเลิก</button>' : '') +
+        '</td>';
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('.btn-approve-leave').forEach(function(btn) {
+      btn.addEventListener('click', function() { approveLeave(btn.dataset.id); });
+    });
+    tbody.querySelectorAll('.btn-reject-leave').forEach(function(btn) {
+      btn.addEventListener('click', function() { rejectLeave(btn.dataset.id); });
+    });
+    tbody.querySelectorAll('.btn-cancel-leave-admin').forEach(function(btn) {
+      btn.addEventListener('click', function() { confirmCancelLeave(btn.dataset.id); });
+    });
+  }
+
+  function approveLeave(requestId) {
+    Swal.fire({ icon: 'question', title: 'อนุมัติใบลานี้?', showCancelButton: true, confirmButtonText: 'อนุมัติ', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#0d9488' })
+      .then(function(result) {
+        if (!result.isConfirmed) return;
+        showLoading(true);
+        callServer('approveLeaveRequest', APP.token, requestId).then(function(res) {
+          showLoading(false);
+          toast('success', res.message);
+          loadAllLeaves();
+        }).catch(function(err) { showLoading(false); fireError(err); });
+      });
+  }
+
+  function rejectLeave(requestId) {
+    Swal.fire({
+      icon: 'warning', title: 'ปฏิเสธใบลานี้?', input: 'text', inputPlaceholder: 'ระบุเหตุผล (ถ้ามี)',
+      showCancelButton: true, confirmButtonText: 'ปฏิเสธ', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#e11d48'
+    }).then(function(result) {
+      if (!result.isConfirmed) return;
+      showLoading(true);
+      callServer('rejectLeaveRequest', APP.token, requestId, result.value || '').then(function(res) {
+        showLoading(false);
+        toast('success', res.message);
+        loadAllLeaves();
+      }).catch(function(err) { showLoading(false); fireError(err); });
+    });
+  }
+
+  function confirmCancelLeave(requestId) {
+    Swal.fire({
+      icon: 'warning', title: 'ยืนยันการยกเลิกใบลานี้?', input: 'text', inputPlaceholder: 'เหตุผลที่ขอยกเลิก (ถ้ามี)',
+      text: 'วันที่เกี่ยวข้องจะถูกปลดล็อกให้บันทึกผลงานได้ตามปกติ',
+      showCancelButton: true, confirmButtonText: 'ยืนยันยกเลิกใบลา', cancelButtonText: 'ปิด', confirmButtonColor: '#e11d48'
+    }).then(function(result) {
+      if (!result.isConfirmed) return;
+      showLoading(true);
+      callServer('cancelLeaveRequest', APP.token, requestId, result.value || '').then(function(res) {
+        showLoading(false);
+        toast('success', res.message);
+        loadMyLeaves();
+        if (APP.user.role === 'admin' || APP.user.role === 'head') loadAllLeaves();
+      }).catch(function(err) { showLoading(false); fireError(err); });
+    });
+  }
+
+  function formatThaiDateRange_(startDate, endDate) {
+    var s = formatThaiDate_(startDate);
+    var e = formatThaiDate_(endDate);
+    return startDate === endDate ? s : (s + ' — ' + e);
+  }
+
+  function formatThaiDate_(dateStr) {
+    var d = new Date(dateStr + 'T00:00:00');
+    return d.getDate() + ' ' + APP.THAI_MONTHS[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+  }
+
+  function printLeaveForm(requestId) {
+    showLoading(true);
+    callServer('generateLeaveFormPdf', APP.token, requestId).then(function(res) {
+      showLoading(false);
+      if (!res || !res.ok) {
+        toast('error', 'ไม่สามารถสร้างไฟล์ PDF ได้');
+        return;
+      }
+      downloadBase64Pdf_(res.base64, res.filename);
+      toast('success', 'สร้างไฟล์ PDF เรียบร้อยแล้ว');
+    }).catch(function(err) { showLoading(false); fireError(err); });
+  }
+
+  /**
+   * แปลงข้อมูล PDF แบบ base64 (จากเซิร์ฟเวอร์) เป็นไฟล์ดาวน์โหลดในเบราว์เซอร์
+   */
+  function downloadBase64Pdf_(base64, filename) {
+    var byteChars = atob(base64);
+    var byteNumbers = new Array(byteChars.length);
+    for (var i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+    var byteArray = new Uint8Array(byteNumbers);
+    var blob = new Blob([byteArray], { type: 'application/pdf' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
+  }
+</script>

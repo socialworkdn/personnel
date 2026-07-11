@@ -1,0 +1,204 @@
+<template id="tpl-users">
+<div>
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="text-xl font-bold text-slate-800">จัดการผู้ใช้งาน (นักสังคมสงเคราะห์)</h1>
+      <p class="text-sm text-slate-500">กำหนด Username / Password และแต้มประกันขั้นต่ำของแต่ละคน</p>
+    </div>
+    <button id="btnAddUser" class="bg-teal-700 hover:bg-teal-800 text-white text-sm rounded-lg px-4 py-2">+ เพิ่มผู้ใช้ใหม่</button>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm p-4 overflow-x-auto">
+    <table class="w-full text-sm p4p-table">
+      <thead>
+        <tr>
+          <th class="px-2 py-2">Username</th>
+          <th class="px-2 py-2 text-left">ชื่อ-นามสกุล</th>
+          <th class="px-2 py-2">ตำแหน่ง</th>
+          <th class="px-2 py-2">สิทธิ์การใช้งาน</th>
+          <th class="px-2 py-2">แต้มประกันขั้นต่ำ</th>
+          <th class="px-2 py-2">สถานะ</th>
+          <th class="px-2 py-2">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody id="usersTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div id="userModal" class="hidden fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4">
+    <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md fade-in">
+      <h2 id="userModalTitle" class="text-lg font-semibold text-slate-800 mb-4">เพิ่มผู้ใช้ใหม่</h2>
+      <div class="space-y-3">
+        <input type="hidden" id="userFormMode" value="add">
+        <div>
+          <label class="text-xs text-slate-500">Username</label>
+          <input id="userUsername" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+        </div>
+        <div>
+          <label class="text-xs text-slate-500">รหัสผ่าน <span id="userPasswordHint" class="text-slate-400"></span></label>
+          <input id="userPassword" type="password" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+        </div>
+        <div>
+          <label class="text-xs text-slate-500">ชื่อ-นามสกุล</label>
+          <input id="userFullName" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+        </div>
+        <div>
+          <label class="text-xs text-slate-500">ตำแหน่ง</label>
+          <input id="userPosition" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1" placeholder="เช่น นักสังคมสงเคราะห์ชำนาญการ">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-500">สิทธิ์การใช้งาน</label>
+            <select id="userRole" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+              <option value="staff">เจ้าหน้าที่ (staff)</option>
+              <option value="head">หัวหน้ากลุ่มงาน (head)</option>
+              <option value="admin">ผู้ดูแลระบบ (admin)</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">แต้มประกันขั้นต่ำ</label>
+            <input id="userMinPoints" type="number" step="0.01" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1" value="1200">
+          </div>
+        </div>
+        <label class="flex items-center gap-2 text-sm text-slate-600">
+          <input type="checkbox" id="userActive" checked> เปิดใช้งานบัญชีนี้
+        </label>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button id="btnCancelUser" class="px-4 py-2 text-sm rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700">ยกเลิก</button>
+        <button id="btnSaveUser" class="px-4 py-2 text-sm rounded-lg bg-teal-700 hover:bg-teal-800 text-white">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+
+<script>
+  var _usersCache = [];
+
+  function initUsersPage() {
+    document.getElementById('btnAddUser').addEventListener('click', function() { openUserModal('add'); });
+    document.getElementById('btnCancelUser').addEventListener('click', closeUserModal);
+    document.getElementById('btnSaveUser').addEventListener('click', saveUserModal);
+    loadUsers();
+  }
+
+  function loadUsers() {
+    showLoading(true);
+    callServer('getUsers', APP.token).then(function(users) {
+      showLoading(false);
+      users = users || [];
+      _usersCache = users;
+      renderUsers(users);
+    }).catch(function(err) { showLoading(false); fireError(err); });
+  }
+
+  function renderUsers(users) {
+    var tbody = document.getElementById('usersTableBody');
+    tbody.innerHTML = '';
+    users.forEach(function(u) {
+      var tr = document.createElement('tr');
+      var roleLabel = { staff: 'เจ้าหน้าที่', head: 'หัวหน้ากลุ่มงาน', admin: 'ผู้ดูแลระบบ' }[u.role] || u.role;
+      tr.innerHTML =
+        '<td class="px-2 py-2 text-center font-mono text-xs">' + u.username + '</td>' +
+        '<td class="px-2 py-2">' + u.fullName + '</td>' +
+        '<td class="px-2 py-2 text-center">' + (u.position || '') + '</td>' +
+        '<td class="px-2 py-2 text-center">' + roleLabel + '</td>' +
+        '<td class="px-2 py-2 text-center">' + numFmt(u.minGuaranteePoints, 2) + '</td>' +
+        '<td class="px-2 py-2 text-center">' + (u.active ? '<span class="text-emerald-600">ใช้งาน</span>' : '<span class="text-slate-400">ระงับ</span>') + '</td>' +
+        '<td class="px-2 py-2 text-center">' +
+          '<button class="text-indigo-600 text-xs mr-2 btn-edit-user" data-username="' + u.username + '">แก้ไข</button>' +
+          '<button class="text-rose-600 text-xs btn-del-user" data-username="' + u.username + '">ลบ</button>' +
+        '</td>';
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('.btn-edit-user').forEach(function(btn) {
+      btn.addEventListener('click', function() { openUserModal('edit', btn.dataset.username); });
+    });
+    tbody.querySelectorAll('.btn-del-user').forEach(function(btn) {
+      btn.addEventListener('click', function() { confirmDeleteUser(btn.dataset.username); });
+    });
+  }
+
+  function openUserModal(mode, username) {
+    document.getElementById('userFormMode').value = mode;
+    var modal = document.getElementById('userModal');
+    modal.classList.remove('hidden');
+    document.getElementById('userPasswordHint').textContent = mode === 'edit' ? '(เว้นว่างไว้หากไม่เปลี่ยน)' : '';
+
+    if (mode === 'add') {
+      document.getElementById('userModalTitle').textContent = 'เพิ่มผู้ใช้ใหม่';
+      document.getElementById('userUsername').value = '';
+      document.getElementById('userUsername').disabled = false;
+      document.getElementById('userPassword').value = '';
+      document.getElementById('userFullName').value = '';
+      document.getElementById('userPosition').value = '';
+      document.getElementById('userRole').value = 'staff';
+      document.getElementById('userMinPoints').value = 1200;
+      document.getElementById('userActive').checked = true;
+    } else {
+      var u = _usersCache.filter(function(x) { return x.username === username; })[0];
+      document.getElementById('userModalTitle').textContent = 'แก้ไขผู้ใช้: ' + u.fullName;
+      document.getElementById('userUsername').value = u.username;
+      document.getElementById('userUsername').disabled = true;
+      document.getElementById('userPassword').value = '';
+      document.getElementById('userFullName').value = u.fullName;
+      document.getElementById('userPosition').value = u.position || '';
+      document.getElementById('userRole').value = u.role;
+      document.getElementById('userMinPoints').value = u.minGuaranteePoints;
+      document.getElementById('userActive').checked = u.active;
+    }
+  }
+
+  function closeUserModal() {
+    document.getElementById('userModal').classList.add('hidden');
+  }
+
+  function saveUserModal() {
+    var mode = document.getElementById('userFormMode').value;
+    var payload = {
+      username: document.getElementById('userUsername').value.trim(),
+      password: document.getElementById('userPassword').value,
+      fullName: document.getElementById('userFullName').value.trim(),
+      position: document.getElementById('userPosition').value.trim(),
+      role: document.getElementById('userRole').value,
+      minGuaranteePoints: Number(document.getElementById('userMinPoints').value) || 0,
+      active: document.getElementById('userActive').checked
+    };
+    if (!payload.username || !payload.fullName) {
+      toast('error', 'กรุณากรอก Username และชื่อ-นามสกุล');
+      return;
+    }
+    if (mode === 'add' && !payload.password) {
+      toast('error', 'กรุณากำหนดรหัสผ่านเริ่มต้น');
+      return;
+    }
+
+    showLoading(true);
+    var call = mode === 'add' ? callServer('addUser', APP.token, payload) : callServer('updateUser', APP.token, payload);
+    call.then(function(res) {
+      showLoading(false);
+      if (!res.ok) { toast('error', res.message); return; }
+      toast('success', res.message);
+      closeUserModal();
+      loadUsers();
+    }).catch(function(err) { showLoading(false); fireError(err); });
+  }
+
+  function confirmDeleteUser(username) {
+    Swal.fire({
+      icon: 'warning', title: 'ยืนยันการลบผู้ใช้?', text: username, showCancelButton: true,
+      confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#e11d48'
+    }).then(function(result) {
+      if (!result.isConfirmed) return;
+      showLoading(true);
+      callServer('deleteUser', APP.token, username).then(function() {
+        showLoading(false);
+        toast('success', 'ลบผู้ใช้เรียบร้อยแล้ว');
+        loadUsers();
+      }).catch(function(err) { showLoading(false); fireError(err); });
+    });
+  }
+</script>

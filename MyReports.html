@@ -1,0 +1,198 @@
+<template id="tpl-myreports">
+<div>
+  <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+    <div>
+      <h1 class="text-xl font-bold text-slate-800">รายงานผลการปฏิบัติงานรายบุคคล</h1>
+      <p class="text-sm text-slate-500">แบบบันทึกการจ่ายค่าตอบแทนตามผลการปฏิบัติงาน (รายบุคคล) รายเดือน</p>
+    </div>
+    <div class="flex gap-2 items-center bg-white rounded-xl shadow-sm p-2 no-print">
+      <select id="reportUserSelect" class="hidden border border-slate-300 rounded-lg px-2 py-1.5 text-sm"></select>
+      <select id="reportYear" class="border border-slate-300 rounded-lg px-2 py-1.5 text-sm"></select>
+      <select id="reportMonth" class="border border-slate-300 rounded-lg px-2 py-1.5 text-sm"></select>
+      <button id="btnLoadReport" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm rounded-lg px-3 py-1.5">แสดงรายงาน</button>
+      <button id="btnPrintReport" class="bg-teal-700 hover:bg-teal-800 text-white text-sm rounded-lg px-3 py-1.5">🖨️ พิมพ์</button>
+    </div>
+  </div>
+
+  <div id="reportSummaryCards" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+  <div id="reportLeaveBox" class="hidden bg-amber-50 border border-amber-200 text-amber-700 text-sm rounded-lg px-4 py-2 mb-4"></div>
+
+  <div class="bg-white rounded-xl shadow-sm p-4 overflow-x-auto">
+    <table class="w-full text-sm p4p-table" id="reportTable">
+      <thead>
+        <tr>
+          <th class="px-2 py-2 text-left">ภารกิจ</th>
+          <th class="px-2 py-2">หน่วยนับ</th>
+          <th class="px-2 py-2">แต้ม/หน่วย</th>
+          <th class="px-2 py-2">จำนวนรวม</th>
+          <th class="px-2 py-2">แต้มรวม</th>
+        </tr>
+      </thead>
+      <tbody id="reportTableBody"></tbody>
+    </table>
+  </div>
+</div>
+</template>
+
+<script>
+  var _lastReport = null;
+
+  function initMyReportsPage() {
+    var now = new Date();
+    fillYearSelect(document.getElementById('reportYear'), nowBEYear());
+    fillMonthSelect(document.getElementById('reportMonth'), now.getMonth() + 1);
+
+    var userSel = document.getElementById('reportUserSelect');
+    if (APP.user.role === 'admin' || APP.user.role === 'head') {
+      userSel.classList.remove('hidden');
+      showLoading(true);
+      callServer('getUsers', APP.token).then(function(users) {
+        showLoading(false);
+        users = users || [];
+        userSel.innerHTML = '';
+        users.forEach(function(u) {
+          var opt = document.createElement('option');
+          opt.value = u.username;
+          opt.textContent = u.fullName + ' (' + u.username + ')';
+          if (u.username === APP.user.username) opt.selected = true;
+          userSel.appendChild(opt);
+        });
+      }).catch(function(err) { showLoading(false); fireError(err); });
+    }
+
+    document.getElementById('btnLoadReport').addEventListener('click', loadReport);
+    document.getElementById('btnPrintReport').addEventListener('click', printReport);
+    loadReport();
+  }
+
+  function loadReport() {
+    var yearBE = document.getElementById('reportYear').value;
+    var month = document.getElementById('reportMonth').value;
+    var userSel = document.getElementById('reportUserSelect');
+    var username = (!userSel.classList.contains('hidden') && userSel.value) ? userSel.value : APP.user.username;
+
+    showLoading(true);
+    callServer('getIndividualReport', APP.token, yearBE, month, username).then(function(report) {
+      showLoading(false);
+      _lastReport = report;
+      renderReport(report);
+    }).catch(function(err) {
+      showLoading(false);
+      fireError(err);
+    });
+  }
+
+  function renderReport(report) {
+    var cards = document.getElementById('reportSummaryCards');
+    var s = report.summary;
+    cards.innerHTML =
+      cardHtml('แต้มบริการ', s.servicePoints, 'border-teal-600') +
+      cardHtml('แต้มบริหารและวิชาการ', s.adminAcademicPoints, 'border-indigo-500') +
+      cardHtml('แต้มพิเศษผู้บริหาร', s.specialAdminPoints, 'border-amber-500') +
+      cardHtml('รวมแต้มทั้งหมด', s.grandTotal, 'border-rose-500');
+
+    var leaveBox = document.getElementById('reportLeaveBox');
+    if (report.leaveDays && report.leaveDays.length > 0) {
+      leaveBox.classList.remove('hidden');
+      leaveBox.innerHTML = '<b>วันลาในเดือนนี้:</b> ' + report.leaveDays.map(function(l) {
+        return 'วันที่ ' + l.day + ' (' + l.leaveType + ')';
+      }).join(', ');
+    } else {
+      leaveBox.classList.add('hidden');
+      leaveBox.innerHTML = '';
+    }
+
+    var tbody = document.getElementById('reportTableBody');
+    tbody.innerHTML = '';
+    var groups = {};
+    report.taskRows.forEach(function(r) {
+      if (!groups[r.category]) groups[r.category] = [];
+      groups[r.category].push(r);
+    });
+    Object.keys(groups).sort().forEach(function(cat) {
+      var catTr = document.createElement('tr');
+      catTr.className = 'cat-row';
+      catTr.innerHTML = '<td colspan="5" class="px-2 py-1.5">' + cat + '</td>';
+      tbody.appendChild(catTr);
+      groups[cat].forEach(function(r) {
+        if (r.totalQty === 0) return;
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td class="px-2 py-1.5">' + r.name + '</td>' +
+          '<td class="px-2 py-1.5 text-center">' + (r.unit || '') + '</td>' +
+          '<td class="px-2 py-1.5 text-center">' + numFmt(r.point, 3) + '</td>' +
+          '<td class="px-2 py-1.5 text-center">' + numFmt(r.totalQty, 2) + '</td>' +
+          '<td class="px-2 py-1.5 text-center font-medium">' + numFmt(r.totalPoints, 2) + '</td>';
+        tbody.appendChild(tr);
+      });
+    });
+  }
+
+  function cardHtml(label, value, borderClass) {
+    return '<div class="bg-white rounded-xl shadow-sm p-4 border-l-4 ' + borderClass + '">' +
+      '<div class="text-xs text-slate-500">' + label + '</div>' +
+      '<div class="text-xl font-bold text-slate-800 mt-1">' + numFmt(value, 2) + '</div></div>';
+  }
+
+  function printReport() {
+    if (!_lastReport) return;
+    var r = _lastReport;
+    var activeDays = r.activeDays || [];
+    var leaveDaysList = r.leaveDays || [];
+
+    if (activeDays.length === 0 && leaveDaysList.length === 0) {
+      toast('error', 'เดือนนี้ยังไม่มีการบันทึกผลการปฏิบัติงานหรือวันลา จึงไม่มีข้อมูลให้พิมพ์');
+      return;
+    }
+
+    var rowsHtml = '';
+    var groups = {};
+    r.taskRows.forEach(function(row) {
+      if (!groups[row.category]) groups[row.category] = [];
+      groups[row.category].push(row);
+    });
+    Object.keys(groups).sort().forEach(function(cat) {
+      var catRows = groups[cat].filter(function(row) { return row.totalQty > 0; });
+      if (catRows.length === 0) return;
+      rowsHtml += '<tr><td colspan="' + (5 + activeDays.length) + '" style="background:#e2e8f0;font-weight:600;">' + cat + '</td></tr>';
+      catRows.forEach(function(row) {
+        rowsHtml += '<tr><td style="text-align:left">' + row.name + '</td><td>' + (row.unit||'') + '</td><td>' + numFmt(row.avgTime,2) + '</td><td>' + numFmt(row.point,3) + '</td><td>' + numFmt(row.weight,2) + '</td>';
+        for (var d = 0; d < activeDays.length; d++) {
+          rowsHtml += '<td>' + (row.days[d] ? row.days[d] : '') + '</td>';
+        }
+        rowsHtml += '<td>' + numFmt(row.totalQty,2) + '</td><td>' + numFmt(row.totalPoints,2) + '</td></tr>';
+      });
+    });
+
+    var dayHeaders = '';
+    activeDays.forEach(function(d) { dayHeaders += '<th>' + d + '</th>'; });
+
+    var leaveHtml = '';
+    if (r.leaveDays && r.leaveDays.length > 0) {
+      var leaveItems = r.leaveDays.map(function(l) { return 'วันที่ ' + l.day + ' (' + l.leaveType + ')'; }).join(', ');
+      leaveHtml = '<div style="margin-top:8px;font-size:11px;"><b>วันลาในเดือนนี้:</b> ' + leaveItems + '</div>';
+    }
+
+    var html =
+      '<div class="print-doc">' +
+      '<div style="text-align:center;font-weight:700;font-size:15px;">แบบบันทึกการจ่ายค่าตอบแทนตามผลการปฏิบัติงาน (รายบุคคล)</div>' +
+      '<div style="text-align:center;">การปฏิบัติงานสังคมสงเคราะห์ กลุ่มงานสังคมสงเคราะห์ โรงพยาบาลสมเด็จพระสังฆราช (อมฺพรมหาเถร)</div>' +
+      '<div style="text-align:center;margin-bottom:8px;">' + r.user.fullName + ' ประจำเดือน ' + r.monthName + ' พ.ศ. ' + r.yearBE + '</div>' +
+      '<table><thead><tr>' +
+      '<th rowspan="2">ภารกิจ</th><th rowspan="2">หน่วยนับ</th><th rowspan="2">เวลาเฉลี่ย</th><th rowspan="2">แต้ม/หน่วย</th><th rowspan="2">น้ำหนัก</th>' +
+      '<th colspan="' + activeDays.length + '">วันที่ (เฉพาะวันที่มีการบันทึก)</th><th rowspan="2">รวม</th><th rowspan="2">แต้ม</th>' +
+      '</tr><tr>' + dayHeaders + '</tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
+      leaveHtml +
+      '<table style="margin-top:10px;width:50%"><tr><td>แต้มบริการ</td><td>' + numFmt(r.summary.servicePoints,2) + '</td></tr>' +
+      '<tr><td>แต้มบริหารและวิชาการ</td><td>' + numFmt(r.summary.adminAcademicPoints,2) + '</td></tr>' +
+      '<tr><td>แต้มพิเศษผู้บริหาร</td><td>' + numFmt(r.summary.specialAdminPoints,2) + '</td></tr>' +
+      '<tr><td><b>รวมแต้มทั้งหมด</b></td><td><b>' + numFmt(r.summary.grandTotal,2) + '</b></td></tr></table>' +
+      '<div style="display:flex;justify-content:space-around;margin-top:40px;">' +
+      '<div style="text-align:center;">ลงชื่อ............................................<br>(' + r.user.fullName + ')<br>' + (r.user.position||'') + '</div>' +
+      '<div style="text-align:center;">ลงชื่อ............................................<br>(...................................)<br>หัวหน้ากลุ่มงานสังคมสงเคราะห์</div>' +
+      '</div></div>';
+
+    var safeName = (r.user.fullName || '').replace(/\s+/g, '');
+    openPrint(html, 'landscape', 'แบบบันทึกผลการปฏิบัติงาน_' + safeName + '_' + r.monthName + r.yearBE);
+  }
+</script>
