@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ระบบจัดการบุคลากร</title><link rel="icon" type="image/png" href="https://img2.pic.in.th/Logo-sw.png">
+  <title>ระบบ P4P กลุ่มงานสังคมสงเคราะห์</title><link rel="icon" type="image/png" href="https://img2.pic.in.th/Logo-sw.png">
   <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -106,6 +106,7 @@
           <a data-page="entry" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-slate-700">📝 บันทึกผลการปฏิบัติงาน</a>
           <a data-page="myreports" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-slate-700">📄 รายงาน P4P บุคคล</a>
           <a data-page="summary" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-slate-700">💰 สรุปการจ่ายเงิน P4P กลุ่มงาน</a>
+          <a data-page="hrlist" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-slate-700">🗂️ รายชื่อผู้ปฏิบัติงาน P4P (ส่ง HR)</a>
           <a data-page="leaves" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-slate-700">🏖️ ระบบวันลา</a>
           <a data-page="users" id="navUsers" class="nav-link hidden flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-slate-700">👤 จัดการผู้ใช้</a>
           <a data-page="account" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-slate-700">🔒 บัญชีของฉัน</a>
@@ -126,10 +127,8 @@
   <!-- ============ PAGE TEMPLATES + PAGE-SPECIFIC JS ============ -->
   <!-- เดิมฝั่ง Apps Script ใช้ <?!= include('Dashboard'); ?> ฯลฯ ฝัง HTML ของแต่ละหน้า
        ตอน render ที่เซิร์ฟเวอร์ ตอนนี้ไฟล์หน้าเว็บเหล่านี้ (เนื้อหาเดิมทุกตัวอักษร ไม่มีการแก้ไข)
-       ถูกดึงมาแบบไดนามิกด้วย fetch() จากไฟล์ .html ที่อยู่โฟลเดอร์เดียวกับ index.html นี้
-       (Dashboard.html, Entry.html, LeaveRequests.html, MyReports.html, Summary.html, Users.html,
-       Account.html) แล้วแทรกเข้าหน้านี้แทน (ดูฟังก์ชัน loadPageTemplates ด้านล่าง) เพื่อให้ยังคง
-       แยกไฟล์ต่อหน้าเหมือนเดิมได้โดยไม่ต้องมี build step -->
+       ถูกดึงมาแบบไดนามิกด้วย fetch() จากไฟล์ .html ที่อยู่โฟลเดอร์เดียวกับ index.html นี้ แล้วแทรกเข้าหน้านี้แทน (ดูฟังก์ชัน
+       loadPageTemplates ด้านล่าง) เพื่อให้ยังคงแยกไฟล์ต่อหน้าเหมือนเดิมได้โดยไม่ต้องมี build step -->
 
   <!-- ============ PRINT AREA (shared) ============ -->
   <div id="printArea" class="hidden"></div>
@@ -299,7 +298,7 @@
   }
 
   // ===================== โหลดเทมเพลตของแต่ละหน้า (แทนที่ include() ฝั่ง Apps Script เดิม) =====================
-  var PAGE_FILES = ['Dashboard', 'Entry', 'LeaveRequests', 'MyReports', 'Summary', 'Users', 'Account'];
+  var PAGE_FILES = ['Dashboard', 'Entry', 'LeaveRequests', 'MyReports', 'Summary', 'HRList', 'Users', 'Account'];
 
   function loadPageTemplates() {
     return Promise.all(PAGE_FILES.map(function(name) {
@@ -453,6 +452,7 @@ var CURRENT_PAGE = null;
         case 'leaves': initLeavesPage(); break;
         case 'myreports': initMyReportsPage(); break;
         case 'summary': initSummaryPage(); break;
+        case 'hrlist': initHRListPage(); break;
         case 'users': initUsersPage(); break;
         case 'account': initAccountPage(); break;
       }
