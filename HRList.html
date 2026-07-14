@@ -187,18 +187,18 @@
     var rowsHtml = '';
     d.staff.forEach(function(s) {
       rowsHtml += '<tr>' +
-        '<td>' + s.no + '</td>' +
+        '<td style="text-align:center">' + s.no + '</td>' +
         '<td colspan="2" style="text-align:left">' + s.fullName + '</td>' +
-        '<td>' + (s.position || '') + '</td>';
+        '<td style="text-align:center">' + (s.position || '') + '</td>';
       for (var c = 1; c <= 6; c++) {
-        rowsHtml += '<td>' + (s.category === c ? '✓' : '') + '</td>';
+        rowsHtml += '<td style="text-align:center">' + (s.category === c ? '✓' : '') + '</td>';
       }
       rowsHtml += '</tr>';
     });
 
     var totalRow = '<tr style="font-weight:600;">' +
       '<td></td><td colspan="2" style="text-align:left">รวม</td><td></td>';
-    for (var c = 1; c <= 6; c++) { totalRow += '<td>' + (counts[c - 1] || '') + '</td>'; }
+    for (var c = 1; c <= 6; c++) { totalRow += '<td style="text-align:center">' + (counts[c - 1] || '') + '</td>'; }
     totalRow += '</tr>';
 
     var html =
