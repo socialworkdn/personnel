@@ -1,0 +1,228 @@
+<template id="tpl-hrlist">
+<div>
+  <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+    <div>
+      <h1 class="text-xl font-bold text-slate-800">รายชื่อผู้ปฏิบัติงาน P4P (ส่งฝ่ายทรัพยากรบุคคล)</h1>
+      <p class="text-sm text-slate-500">แบบฟอร์มรายชื่อผู้ปฏิบัติงาน ที่ต้องจัดส่งให้ฝ่ายทรัพยากรบุคคลทุกเดือน</p>
+    </div>
+    <div class="flex gap-2 items-center bg-white rounded-xl shadow-sm p-2 no-print flex-wrap">
+      <select id="hrYear" class="border border-slate-300 rounded-lg px-2 py-1.5 text-sm"></select>
+      <select id="hrMonth" class="border border-slate-300 rounded-lg px-2 py-1.5 text-sm"></select>
+      <button id="btnLoadHR" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm rounded-lg px-3 py-1.5">แสดงข้อมูล</button>
+      <button id="btnPrintHR" class="bg-teal-700 hover:bg-teal-800 text-white text-sm rounded-lg px-3 py-1.5">🖨️ พิมพ์</button>
+    </div>
+  </div>
+
+  <div id="hrStatusBox" class="rounded-xl p-4 mb-4 border flex items-center justify-between flex-wrap gap-3 no-print">
+    <div class="text-sm" id="hrStatusText">กำลังโหลดสถานะ...</div>
+    <div class="flex gap-2" id="hrStatusActions"></div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm p-4 overflow-x-auto mb-4">
+    <table class="w-full text-sm p4p-table">
+      <thead>
+        <tr>
+          <th class="px-2 py-2">ลำดับ</th>
+          <th class="px-2 py-2 text-left">ชื่อ-นามสกุล</th>
+          <th class="px-2 py-2">ตำแหน่ง</th>
+          <th class="px-2 py-2">หมวดวิชาชีพ (สำหรับแบบฟอร์ม HR)</th>
+        </tr>
+      </thead>
+      <tbody id="hrTableBody"></tbody>
+    </table>
+    <div id="hrEmptyMsg" class="hidden text-sm text-slate-400 text-center py-6">ยังไม่มีเจ้าหน้าที่ในระบบ</div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm p-4">
+    <h2 class="font-semibold text-slate-700 mb-3">📋 ประวัติการส่งย้อนหลัง 12 เดือน (ป้องกันการตกหล่น)</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2" id="hrHistoryGrid"></div>
+  </div>
+</div>
+</template>
+
+<script>
+  var _hrLastData = null;
+
+  function initHRListPage() {
+    var now = new Date();
+    fillYearSelect(document.getElementById('hrYear'), nowBEYear());
+    fillMonthSelect(document.getElementById('hrMonth'), now.getMonth() + 1);
+
+    document.getElementById('btnLoadHR').addEventListener('click', loadHRList);
+    document.getElementById('btnPrintHR').addEventListener('click', printHRList);
+
+    loadHRList();
+    loadHRHistory();
+  }
+
+  function loadHRList() {
+    var yearBE = document.getElementById('hrYear').value;
+    var month = document.getElementById('hrMonth').value;
+
+    showLoading(true);
+    callServer('getHRPersonnelList', APP.token, yearBE, month).then(function(data) {
+      showLoading(false);
+      _hrLastData = data;
+      renderHRList(data);
+    }).catch(function(err) {
+      showLoading(false);
+      fireError(err);
+    });
+  }
+
+  function loadHRHistory() {
+    callServer('getHRSubmissionHistory', APP.token, 12).then(function(list) {
+      renderHRHistory(list);
+    }).catch(function(err) { fireError(err); });
+  }
+
+  function renderHRList(data) {
+    var tbody = document.getElementById('hrTableBody');
+    var emptyMsg = document.getElementById('hrEmptyMsg');
+    tbody.innerHTML = '';
+
+    if (!data.staff || data.staff.length === 0) {
+      emptyMsg.classList.remove('hidden');
+    } else {
+      emptyMsg.classList.add('hidden');
+      data.staff.forEach(function(s) {
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td class="px-2 py-2 text-center">' + s.no + '</td>' +
+          '<td class="px-2 py-2">' + s.fullName + '</td>' +
+          '<td class="px-2 py-2 text-center">' + (s.position || '') + '</td>' +
+          '<td class="px-2 py-2 text-center">' + data.categoryLabels[s.category - 1] + '</td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    renderHRStatus(data);
+  }
+
+  function renderHRStatus(data) {
+    var box = document.getElementById('hrStatusBox');
+    var text = document.getElementById('hrStatusText');
+    var actions = document.getElementById('hrStatusActions');
+    var canManage = (APP.user.role === 'admin' || APP.user.role === 'head');
+    var s = data.submission;
+
+    if (s.submitted) {
+      box.className = 'rounded-xl p-4 mb-4 border flex items-center justify-between flex-wrap gap-3 no-print bg-emerald-50 border-emerald-200';
+      text.innerHTML = '✅ <b>ส่งฝ่ายทรัพยากรบุคคลแล้ว</b> — เดือน ' + data.monthName + ' พ.ศ. ' + data.yearBE +
+        ' (บันทึกโดย ' + (s.submittedBy || '-') + ' เมื่อ ' + formatDateTimeTH_(s.submittedAt) + ')';
+      actions.innerHTML = '';
+      if (canManage) {
+        var btnUn = document.createElement('button');
+        btnUn.className = 'bg-white border border-emerald-300 hover:bg-emerald-100 text-emerald-700 text-sm rounded-lg px-3 py-1.5';
+        btnUn.textContent = 'ยกเลิกการบันทึก';
+        btnUn.addEventListener('click', function() { toggleHRSubmission(false); });
+        actions.appendChild(btnUn);
+      }
+    } else {
+      box.className = 'rounded-xl p-4 mb-4 border flex items-center justify-between flex-wrap gap-3 no-print bg-amber-50 border-amber-200';
+      text.innerHTML = '⏳ <b>ยังไม่ได้บันทึกว่าส่งฝ่ายทรัพยากรบุคคล</b> — เดือน ' + data.monthName + ' พ.ศ. ' + data.yearBE;
+      actions.innerHTML = '';
+      if (canManage) {
+        var btnMark = document.createElement('button');
+        btnMark.className = 'bg-teal-700 hover:bg-teal-800 text-white text-sm rounded-lg px-3 py-1.5';
+        btnMark.textContent = '✔️ บันทึกว่าส่งแล้ว';
+        btnMark.addEventListener('click', function() { toggleHRSubmission(true); });
+        actions.appendChild(btnMark);
+      } else {
+        actions.innerHTML = '<span class="text-xs text-slate-400">เฉพาะผู้ดูแลระบบ/หัวหน้ากลุ่มงานเท่านั้นที่บันทึกสถานะได้</span>';
+      }
+    }
+  }
+
+  function toggleHRSubmission(mark) {
+    var yearBE = document.getElementById('hrYear').value;
+    var month = document.getElementById('hrMonth').value;
+    var action = mark ? 'markHRSubmitted' : 'unmarkHRSubmitted';
+
+    showLoading(true);
+    callServer(action, APP.token, yearBE, month).then(function(res) {
+      showLoading(false);
+      if (!res.ok) { toast('error', res.message); return; }
+      toast('success', res.message);
+      loadHRList();
+      loadHRHistory();
+    }).catch(function(err) { showLoading(false); fireError(err); });
+  }
+
+  function renderHRHistory(list) {
+    var grid = document.getElementById('hrHistoryGrid');
+    grid.innerHTML = '';
+    list.forEach(function(m) {
+      var card = document.createElement('div');
+      card.className = 'rounded-lg p-3 border text-center ' + (m.submitted ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200');
+      card.innerHTML =
+        '<div class="text-xs text-slate-500">' + m.monthName + ' ' + m.yearBE + '</div>' +
+        '<div class="text-lg mt-1">' + (m.submitted ? '✅' : '❌') + '</div>' +
+        '<div class="text-[11px] mt-0.5 ' + (m.submitted ? 'text-emerald-600' : 'text-rose-500') + '">' + (m.submitted ? 'ส่งแล้ว' : 'ยังไม่ส่ง') + '</div>';
+      grid.appendChild(card);
+    });
+  }
+
+  function formatDateTimeTH_(iso) {
+    if (!iso) return '-';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '-';
+    var yearBE = d.getFullYear() + 543;
+    var dd = String(d.getDate()).padStart(2, '0');
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var hh = String(d.getHours()).padStart(2, '0');
+    var mi = String(d.getMinutes()).padStart(2, '0');
+    return dd + '/' + mm + '/' + yearBE + ' ' + hh + ':' + mi + ' น.';
+  }
+
+  function printHRList() {
+    if (!_hrLastData) return;
+    var d = _hrLastData;
+    var labels = d.categoryLabels;
+
+    // นับจำนวนต่อหมวดสำหรับแถวรวม
+    var counts = [0, 0, 0, 0, 0, 0];
+    d.staff.forEach(function(s) { counts[s.category - 1] += 1; });
+
+    var rowsHtml = '';
+    d.staff.forEach(function(s) {
+      rowsHtml += '<tr>' +
+        '<td>' + s.no + '</td>' +
+        '<td colspan="2" style="text-align:left">' + s.fullName + '</td>' +
+        '<td>' + (s.position || '') + '</td>';
+      for (var c = 1; c <= 6; c++) {
+        rowsHtml += '<td>' + (s.category === c ? '✓' : '') + '</td>';
+      }
+      rowsHtml += '</tr>';
+    });
+
+    var totalRow = '<tr style="font-weight:600;">' +
+      '<td></td><td colspan="2" style="text-align:left">รวม</td><td></td>';
+    for (var c = 1; c <= 6; c++) { totalRow += '<td>' + (counts[c - 1] || '') + '</td>'; }
+    totalRow += '</tr>';
+
+    var html =
+      '<div class="print-doc">' +
+      '<div style="text-align:center;font-weight:700;font-size:15px;">รายชื่อผู้ปฏิบัติงาน เดือน ' + d.monthName + ' ' + d.yearBE + '</div>' +
+      '<div style="text-align:center;margin-bottom:8px;">หน่วยงาน กลุ่มงานสังคมสงเคราะห์</div>' +
+      '<table><thead>' +
+      '<tr>' +
+        '<th rowspan="3">ลำดับ</th>' +
+        '<th colspan="2" rowspan="3">ชื่อ - นามสกุล</th>' +
+        '<th rowspan="3">ตำแหน่ง</th>' +
+        '<th rowspan="2">' + labels[0] + '</th>' +
+        '<th colspan="2">วิชาชีพอื่น</th>' +
+        '<th colspan="2">Back</th>' +
+        '<th rowspan="2">อื่น ๆ</th>' +
+      '</tr>' +
+      '<tr><th>ป.ตรี</th><th>ต่ำกว่าป.ตรี</th><th>ป.ตรี</th><th>ต่ำกว่า ป.ตรี</th></tr>' +
+      '<tr><th>(1)</th><th>(2)</th><th>(3)</th><th>(4)</th><th>(5)</th><th>(6)</th></tr>' +
+      '</thead><tbody>' + rowsHtml + totalRow + '</tbody></table>' +
+      '<div style="display:flex;justify-content:flex-end;margin-top:50px;">' +
+      '<div style="text-align:center;width:35%;">ลงชื่อ............................................<br>( นายสถาพร  อิ่มเอม )<br>นักสังคมสงเคราะห์ชำนาญการ</div>' +
+      '</div>' +
+      '</div>';
+
+    openPrint(html, 'landscape', 'รายชื่อผู้ปฏิบัติงานP4P_' + d.monthName + d.yearBE);
+  }
+</script>
