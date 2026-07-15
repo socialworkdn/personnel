@@ -34,6 +34,8 @@
     document.getElementById('accountInfo').innerHTML =
       '<div><span class="text-slate-400">ชื่อ-นามสกุล:</span> ' + APP.user.fullName + '</div>' +
       '<div><span class="text-slate-400">ตำแหน่ง:</span> ' + (APP.user.position || '-') + '</div>' +
+      '<div><span class="text-slate-400">ระดับ:</span> ' + (APP.user.level || '-') + '</div>' +
+      '<div><span class="text-slate-400">เลขที่ใบประกอบวิชาชีพ:</span> ' + (APP.user.licenseNo || '-') + '</div>' +
       '<div><span class="text-slate-400">Username:</span> ' + APP.user.username + '</div>' +
       '<div><span class="text-slate-400">สิทธิ์การใช้งาน:</span> ' + roleLabel + '</div>' +
       '<div><span class="text-slate-400">แต้มประกันขั้นต่ำ:</span> ' + numFmt(APP.user.minGuaranteePoints, 2) + '</div>';
