@@ -29,9 +29,6 @@
       <div class="text-sm text-slate-500">กรอกจำนวนที่ปฏิบัติงานของ <span id="entryDayLabel" class="font-semibold text-teal-700">-</span> เฉพาะรายการที่มีการปฏิบัติงานจริง</div>
       <div class="text-sm font-semibold text-slate-700">รวมแต้มวันนี้: <span id="entryDayTotal" class="text-teal-700">0</span></div>
     </div>
-    <div id="entryAutoFillNote" class="hidden text-xs text-teal-600 bg-teal-50 border border-teal-200 rounded-lg px-3 py-2 mb-3">
-      🔄 เติมจำนวนให้อัตโนมัติจากระบบ "บันทึกข้อมูลการให้บริการ" — กรุณาตรวจสอบความถูกต้องก่อนกดบันทึก
-    </div>
     <div id="entryTableWrap" class="overflow-x-auto max-h-[60vh] overflow-y-auto border border-slate-200 rounded-lg">
       <table class="w-full text-sm p4p-table">
         <thead class="sticky top-0 z-10">
@@ -257,6 +254,36 @@
     document.querySelectorAll('#entryTableBody tr.custom-row').forEach(function(tr) { tr.remove(); });
   }
 
+  /**
+   * แสดงแถวแต้มที่เกิดจาก "ขออนุมัติเข้าร่วมประชุมฯ" ที่ได้รับอนุมัติแล้ว — ล็อกไว้ไม่ให้แก้ไข/ลบ
+   * จากหน้านี้โดยตรง (ต้องไปยกเลิกที่หน้า "ขออนุมัติเข้าร่วมประชุมฯ" เท่านั้น)
+   */
+  function addMeetingRow(item) {
+    var tr = document.createElement('tr');
+    tr.className = 'meeting-row';
+    tr.dataset.catId = item.catId;
+    tr.innerHTML =
+      '<td class="px-2 py-1.5 text-center text-slate-400">📚</td>' +
+      '<td class="px-2 py-1.5">' + item.name + ' <span class="text-[10px] text-indigo-500 block">(จากคำขออนุมัติเข้าร่วมประชุมฯ เลขที่ ' + item.requestId + ' — ล็อกแก้ไขไม่ได้ที่นี่)</span></td>' +
+      '<td class="px-2 py-1.5 text-center text-xs text-slate-500">' + (item.unit || '') + '</td>' +
+      '<td class="px-2 py-1.5 text-center text-xs text-slate-500">' + numFmt(item.avgTime, 0) + '</td>' +
+      '<td class="px-2 py-1.5 text-center text-xs text-slate-500">' + numFmt(item.pointPerUnit, 3) + '</td>' +
+      '<td class="px-2 py-1.5 text-center">' + numFmt(item.qty, 2) + '</td>' +
+      '<td class="px-2 py-1.5 text-center points-cell font-medium text-indigo-700">' + numFmt(item.points, 2) + '</td>' +
+      '<td class="px-2 py-1.5"></td>';
+
+    var addRow = document.querySelector('.custom-add-row[data-cat-id="' + item.catId + '"]');
+    if (addRow) {
+      addRow.parentNode.insertBefore(tr, addRow);
+    } else {
+      document.getElementById('entryTableBody').appendChild(tr);
+    }
+  }
+
+  function clearMeetingRows() {
+    document.querySelectorAll('#entryTableBody tr.meeting-row').forEach(function(tr) { tr.remove(); });
+  }
+
   function loadEntryDay() {
     var yearBE = document.getElementById('entryYear').value;
     var month = document.getElementById('entryMonth').value;
@@ -290,6 +317,13 @@
         hasAnyData = true;
       });
 
+      // แต้มจากคำขออนุมัติเข้าร่วมประชุมฯ ที่ได้รับอนุมัติแล้ว (ล็อกไว้ แก้ไขไม่ได้จากหน้านี้)
+      clearMeetingRows();
+      (dayData.meeting || []).forEach(function(item) {
+        addMeetingRow(item);
+        hasAnyData = true;
+      });
+
       _entryHasExistingData = hasAnyData;
       if (!_entryCurrentLeave) {
         var badge = document.getElementById('entryStatusBadge');
@@ -303,40 +337,9 @@
       }
 
       recalcEntryTotal();
-
-      // เติมจำนวนอัตโนมัติจากระบบ "บันทึกข้อมูลการให้บริการ" (แบบ PULL)
-      // ทำเฉพาะตอนที่ยังไม่มีข้อมูลบันทึกไว้ของวันนี้เลย และวันนี้ไม่ได้ถูกล็อกด้วยใบลา
-      // เพื่อไม่ให้ไปทับข้อมูลที่กรอก/บันทึกไว้แล้ว — ผู้ใช้ยังต้องตรวจสอบและกดบันทึกเองเสมอ
-      if (!hasAnyData && !_entryCurrentLeave) {
-        applyServiceSuggestions_(yearBE, month, day);
-      } else {
-        document.getElementById('entryAutoFillNote').classList.add('hidden');
-      }
     }).catch(function(err) {
       showLoading(false);
       fireError(err);
-    });
-  }
-
-  function applyServiceSuggestions_(yearBE, month, day) {
-    var note = document.getElementById('entryAutoFillNote');
-    note.classList.add('hidden');
-    callServer('getServiceSuggestedQty', APP.token, yearBE, month, day).then(function(res) {
-      var counts = (res && res.counts) || {};
-      var taskIds = Object.keys(counts);
-      if (taskIds.length === 0) return; // ไม่มีข้อมูลบริการที่แมตช์ของวันนี้ — ไม่ต้องทำอะไร
-
-      taskIds.forEach(function(taskId) {
-        var tr = document.querySelector('#entryTableBody tr[data-task-id="' + taskId + '"]');
-        if (!tr) return; // รหัสบริการนี้ยังไม่ได้ผูกกับภารกิจที่แสดงอยู่ในตาราง
-        var input = tr.querySelector('.qty-input');
-        input.value = counts[taskId];
-        recalcEntryRow(tr);
-      });
-      recalcEntryTotal();
-      note.classList.remove('hidden');
-    }).catch(function() {
-      // ดึงข้อมูลแนะนำไม่สำเร็จ (เช่น ยังไม่ได้แชร์สิทธิ์เข้าถึง Sheet ของระบบบริการ) — ปล่อยผ่านเงียบๆ ไม่กระทบการใช้งานหลัก
     });
   }
 
