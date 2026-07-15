@@ -307,6 +307,10 @@
         var qty = dayData.normal ? dayData.normal[taskId] : null;
         if (qty) hasAnyData = true;
         qtyInput.value = qty ? qty : '';
+        qtyInput.classList.remove('bg-amber-50', 'border-amber-400');
+        qtyInput.title = '';
+        var actionCell = tr.querySelector('td:last-child');
+        if (actionCell) actionCell.innerHTML = '';
         recalcEntryRow(tr);
       });
 
@@ -337,10 +341,45 @@
       }
 
       recalcEntryTotal();
+
+      // ดึงคำแนะนำจำนวนจากระบบ "บันทึกข้อมูลการให้บริการ" (ถ้ามี) มาเติมเฉพาะช่องที่ยังว่างอยู่เท่านั้น
+      // (ไม่ทับข้อมูลที่บันทึกไว้แล้ว และไม่บันทึกอัตโนมัติ ผู้ใช้ต้องตรวจสอบแล้วกดบันทึกเองเสมอ)
+      if (!_entryCurrentLeave) {
+        callServer('getServiceSuggestedQty', APP.token, yearBE, month, day).then(function(sugg) {
+          applyServiceSuggestions_(sugg, dayData);
+        }).catch(function() { /* เงียบไว้ ไม่ให้กระทบหน้า Entry หลัก ถ้าดึงคำแนะนำไม่ได้ */ });
+      }
     }).catch(function(err) {
       showLoading(false);
       fireError(err);
     });
+  }
+
+  /**
+   * เติมจำนวนที่ "แนะนำ" จากระบบบันทึกข้อมูลการให้บริการลงในช่องที่ยังว่างอยู่เท่านั้น
+   * (ถ้าช่องนั้นมีข้อมูลที่บันทึกไว้แล้วจะไม่แตะต้อง) พร้อมไฮไลต์สีเหลืองอ่อนให้เห็นชัดว่าเป็นค่าที่ต้องตรวจสอบ
+   */
+  function applyServiceSuggestions_(sugg, dayData) {
+    if (!sugg || !sugg.matched) return;
+    var appliedCount = 0;
+    document.querySelectorAll('#entryTableBody tr[data-task-id]').forEach(function(tr) {
+      var taskId = Number(tr.dataset.taskId);
+      var existingQty = dayData.normal ? dayData.normal[taskId] : null;
+      var suggestedQty = sugg.counts ? sugg.counts[taskId] : null;
+      if (existingQty || !suggestedQty) return; // มีข้อมูลบันทึกไว้แล้ว หรือไม่มีคำแนะนำ ข้าม
+      var qtyInput = tr.querySelector('.qty-input');
+      qtyInput.value = suggestedQty;
+      qtyInput.classList.add('bg-amber-50', 'border-amber-400');
+      qtyInput.title = 'ค่าแนะนำจากระบบบันทึกข้อมูลการให้บริการ กรุณาตรวจสอบก่อนบันทึก';
+      var actionCell = tr.querySelector('td:last-child');
+      if (actionCell) actionCell.innerHTML = '<span class="text-[10px] text-amber-600" title="ค่าแนะนำจากระบบบริการ กรุณาตรวจสอบ">🔎 แนะนำ</span>';
+      recalcEntryRow(tr);
+      appliedCount++;
+    });
+    if (appliedCount > 0) {
+      recalcEntryTotal();
+      toast('success', 'พบข้อมูลจากระบบบันทึกข้อมูลการให้บริการ ' + sugg.matched + ' รายการ นำมาแนะนำจำนวนให้ ' + appliedCount + ' ภารกิจ (ช่องพื้นสีเหลือง) กรุณาตรวจสอบก่อนกดบันทึก');
+    }
   }
 
   function saveEntryDay() {
