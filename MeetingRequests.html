@@ -99,19 +99,10 @@
         <button type="button" id="btnToggleMeetingDetails" class="text-xs text-teal-700 hover:text-teal-900 font-medium">+ รายละเอียดเพิ่มเติม (สำหรับแบบฟอร์มขออนุมัติ)</button>
 
         <div id="meetingDetailsSection" class="hidden space-y-3 border-t border-slate-200 pt-3 mt-1">
-          <div class="grid grid-cols-3 gap-3">
-            <div>
-              <label class="text-xs text-slate-500">ระดับ</label>
-              <input id="meetingLevelInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
-            </div>
-            <div>
-              <label class="text-xs text-slate-500">เลขที่ใบประกอบวิชาชีพ</label>
-              <input id="meetingLicenseInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
-            </div>
-            <div>
-              <label class="text-xs text-slate-500">เลขที่ พรส.</label>
-              <input id="meetingPrsInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
-            </div>
+          <div class="text-xs text-slate-400 -mb-1">หมายเหตุ: ระดับ/เลขที่ใบประกอบวิชาชีพ ระบบจะดึงจากข้อมูลผู้ใช้ของท่านให้อัตโนมัติตอนพิมพ์แบบฟอร์ม (ตั้งค่าได้ที่หน้า "จัดการผู้ใช้")</div>
+          <div>
+            <label class="text-xs text-slate-500">เลขที่ พรส. (ถ้ามี)</label>
+            <input id="meetingPrsInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
           </div>
 
           <div>
@@ -296,8 +287,6 @@
     document.getElementById('meetingTotalDaysDisplay').textContent = '0';
     document.getElementById('meetingTotalPointsDisplay').textContent = '0';
 
-    document.getElementById('meetingLevelInput').value = '';
-    document.getElementById('meetingLicenseInput').value = '';
     document.getElementById('meetingPrsInput').value = '';
     document.getElementById('meetingTravelOfficial').checked = false;
     document.getElementById('meetingTravelPersonal').checked = false;
@@ -350,8 +339,6 @@
       reason: document.getElementById('meetingReasonInput').value.trim(),
       expenseType: document.getElementById('meetingExpenseTypeInput').value,
       expenseNote: document.getElementById('meetingExpenseNoteInput').value.trim(),
-      level: document.getElementById('meetingLevelInput').value.trim(),
-      licenseNo: document.getElementById('meetingLicenseInput').value.trim(),
       prsNo: document.getElementById('meetingPrsInput').value.trim(),
       travelDayTypes: travelDayTypes,
       transportType: document.getElementById('meetingTransportTypeInput').value,
