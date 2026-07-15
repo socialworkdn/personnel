@@ -526,20 +526,57 @@
   }
 
   /**
-   * พิมพ์แบบฟอร์ม "บันทึกข้อความ ขออนุมัติเข้าร่วมประชุม/อบรม/สัมมนา" — สร้าง PDF จริงจาก Template
-   * Google Sheet ต้นฉบับ (เทคนิคเดียวกับใบลา) แล้วดาวน์โหลดเป็นไฟล์ ช่องรายละเอียดค่าใช้จ่ายที่ไม่ได้
-   * กรอกไว้และช่องลงนามผู้เกี่ยวข้องเว้นว่างไว้ให้กรอก/เซ็นด้วยลายมือตามระเบียบก่อนนำส่งฝ่ายทรัพยากรบุคคล
+   * พิมพ์แบบฟอร์ม "บันทึกข้อความ ขออนุมัติเข้าร่วมประชุม/อบรม/สัมมนา" — สร้างทั้ง PDF และไฟล์ Excel
+   * ที่แก้ไขได้ จาก Template Google Sheet ต้นฉบับ (เทคนิคเดียวกับใบลา) ให้เลือกดาวน์โหลด
+   * (Excel ไว้ใช้กรณี PDF จัดหน้าไม่พอดี เนื้อหาล้นไปอีกหน้า จะได้แก้ไข/จัดหน้าเองได้อิสระ)
    */
   function printMeetingForm(requestId) {
     showLoading(true);
     callServer('generateMeetingRequestPdf', APP.token, requestId).then(function(res) {
       showLoading(false);
       if (!res || !res.ok) {
-        toast('error', 'ไม่สามารถสร้างไฟล์ PDF ได้');
+        toast('error', 'ไม่สามารถสร้างไฟล์ได้');
         return;
       }
-      downloadBase64Pdf_(res.base64, res.filename);
-      toast('success', 'สร้างไฟล์ PDF เรียบร้อยแล้ว');
+      Swal.fire({
+        icon: 'question',
+        title: 'เลือกรูปแบบไฟล์ที่ต้องการดาวน์โหลด',
+        html: '<div style="text-align:left;font-size:13px;color:#64748b;">PDF เหมาะสำหรับพิมพ์/ส่งตรงๆ<br>Excel ใช้กรณีต้องแก้ไข/จัดหน้าเอง (เช่น เนื้อหาล้นไปอีกหน้าใน PDF)</div>',
+        showDenyButton: true,
+        showCancelButton: true,
+        confirmButtonText: '📄 ดาวน์โหลด PDF',
+        denyButtonText: '📝 ดาวน์โหลด Excel (แก้ไขได้)',
+        cancelButtonText: 'ปิด',
+        confirmButtonColor: '#0d9488',
+        denyButtonColor: '#4f46e5'
+      }).then(function(result) {
+        if (result.isConfirmed) {
+          downloadBase64Pdf_(res.pdfBase64 || res.base64, res.pdfFilename || res.filename);
+          toast('success', 'สร้างไฟล์ PDF เรียบร้อยแล้ว');
+        } else if (result.isDenied) {
+          downloadBase64Xlsx_(res.xlsxBase64, res.xlsxFilename);
+          toast('success', 'สร้างไฟล์ Excel เรียบร้อยแล้ว');
+        }
+      });
     }).catch(function(err) { showLoading(false); fireError(err); });
+  }
+
+  /**
+   * แปลงข้อมูลไฟล์ Excel แบบ base64 (จากเซิร์ฟเวอร์) เป็นไฟล์ดาวน์โหลดในเบราว์เซอร์
+   */
+  function downloadBase64Xlsx_(base64, filename) {
+    var byteChars = atob(base64);
+    var byteNumbers = new Array(byteChars.length);
+    for (var i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+    var byteArray = new Uint8Array(byteNumbers);
+    var blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
   }
 </script>
