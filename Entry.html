@@ -29,6 +29,9 @@
       <div class="text-sm text-slate-500">กรอกจำนวนที่ปฏิบัติงานของ <span id="entryDayLabel" class="font-semibold text-teal-700">-</span> เฉพาะรายการที่มีการปฏิบัติงานจริง</div>
       <div class="text-sm font-semibold text-slate-700">รวมแต้มวันนี้: <span id="entryDayTotal" class="text-teal-700">0</span></div>
     </div>
+    <div id="entryAutoFillNote" class="hidden text-xs text-teal-600 bg-teal-50 border border-teal-200 rounded-lg px-3 py-2 mb-3">
+      🔄 เติมจำนวนให้อัตโนมัติจากระบบ "บันทึกข้อมูลการให้บริการ" — กรุณาตรวจสอบความถูกต้องก่อนกดบันทึก
+    </div>
     <div id="entryTableWrap" class="overflow-x-auto max-h-[60vh] overflow-y-auto border border-slate-200 rounded-lg">
       <table class="w-full text-sm p4p-table">
         <thead class="sticky top-0 z-10">
@@ -40,7 +43,6 @@
             <th class="px-2 py-2">แต้ม/หน่วย</th>
             <th class="px-2 py-2 w-24">จำนวน</th>
             <th class="px-2 py-2 w-24">แต้มที่ได้</th>
-            <th class="px-2 py-2 w-10"></th>
           </tr>
         </thead>
         <tbody id="entryTableBody"></tbody>
@@ -298,6 +300,7 @@
       // สถานะวันลา (มาจากระบบใบลาเท่านั้น อ่านอย่างเดียว)
       _entryCurrentLeave = dayData.leave || null;
       applyLeaveUIState(_entryCurrentLeave);
+      document.getElementById('entryAutoFillNote').classList.add('hidden');
 
       // รายการมาตรฐาน
       var hasAnyData = !!_entryCurrentLeave;
@@ -378,6 +381,7 @@
     });
     if (appliedCount > 0) {
       recalcEntryTotal();
+      document.getElementById('entryAutoFillNote').classList.remove('hidden');
       toast('success', 'พบข้อมูลจากระบบบันทึกข้อมูลการให้บริการ ' + sugg.matched + ' รายการ นำมาแนะนำจำนวนให้ ' + appliedCount + ' ภารกิจ (ช่องพื้นสีเหลือง) กรุณาตรวจสอบก่อนกดบันทึก');
     }
   }
