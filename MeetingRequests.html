@@ -1,0 +1,417 @@
+<template id="tpl-meetings">
+<div>
+  <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+    <div>
+      <h1 class="text-xl font-bold text-slate-800">ขออนุมัติเข้าร่วมประชุมฯ</h1>
+      <p class="text-sm text-slate-500">ขออนุมัติเข้าร่วมประชุม / อบรม / สัมมนา / หลักสูตรระยะสั้น — เมื่ออนุมัติแล้วจะบันทึกแต้ม P4P หมวด "5. งานวิชาการ" ให้อัตโนมัติ</p>
+    </div>
+    <button id="btnNewMeeting" class="bg-teal-700 hover:bg-teal-800 text-white text-sm rounded-lg px-4 py-2">+ ยื่นคำขอใหม่</button>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+    <h2 class="font-semibold text-slate-700 mb-3">📊 สถิติการประชุม อบรม สัมมนา หลักสูตรระยะสั้น (รายบุคคล) ปีงบประมาณ <span id="meetingStatsFY">-</span> <span class="text-xs text-slate-400 font-normal">(นับเฉพาะที่อนุมัติแล้ว)</span></h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="bg-slate-50 rounded-lg p-3 border-l-4 border-teal-600">
+        <div class="text-xs text-slate-500">จำนวนครั้งที่เข้าร่วม</div>
+        <div class="text-xl font-bold text-slate-800 mt-1" id="meetingStatCount">-</div>
+      </div>
+      <div class="bg-slate-50 rounded-lg p-3 border-l-4 border-indigo-500">
+        <div class="text-xs text-slate-500">รวมจำนวนวัน</div>
+        <div class="text-xl font-bold text-slate-800 mt-1" id="meetingStatDays">-</div>
+      </div>
+      <div class="bg-slate-50 rounded-lg p-3 border-l-4 border-amber-500 col-span-2 md:col-span-2">
+        <div class="text-xs text-slate-500">แต้ม P4P สะสมจากรายการนี้ (โดยประมาณ)</div>
+        <div class="text-xl font-bold text-slate-800 mt-1" id="meetingStatPoints">-</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm p-4 overflow-x-auto mb-6">
+    <h2 class="font-semibold text-slate-700 mb-3">คำขอของฉัน</h2>
+    <table class="w-full text-sm p4p-table">
+      <thead>
+        <tr>
+          <th class="px-2 py-2">เลขที่คำขอ</th>
+          <th class="px-2 py-2 text-left">เรื่อง</th>
+          <th class="px-2 py-2">วันที่</th>
+          <th class="px-2 py-2">จำนวนวัน</th>
+          <th class="px-2 py-2">สถานะ</th>
+          <th class="px-2 py-2">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody id="myMeetingTableBody"></tbody>
+    </table>
+    <div id="myMeetingEmpty" class="hidden text-center text-sm text-slate-400 py-6">ยังไม่มีคำขอที่ยื่นไว้</div>
+  </div>
+
+  <div id="adminMeetingSection" class="hidden bg-white rounded-xl shadow-sm p-4 overflow-x-auto">
+    <h2 class="font-semibold text-slate-700 mb-3">คำขอทั้งหมดในระบบ (สำหรับผู้ดูแล/หัวหน้ากลุ่มงาน)</h2>
+    <table class="w-full text-sm p4p-table">
+      <thead>
+        <tr>
+          <th class="px-2 py-2 text-left">ชื่อ-นามสกุล</th>
+          <th class="px-2 py-2 text-left">เรื่อง</th>
+          <th class="px-2 py-2">วันที่</th>
+          <th class="px-2 py-2">จำนวนวัน</th>
+          <th class="px-2 py-2">สถานะ</th>
+          <th class="px-2 py-2">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody id="allMeetingTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Modal: ยื่นคำขอใหม่ -->
+  <div id="meetingModal" class="hidden fixed inset-0 bg-black/40 z-40 flex items-center justify-center px-4 py-6 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg fade-in">
+      <h2 class="text-lg font-semibold text-slate-800 mb-4">ยื่นคำขออนุมัติเข้าร่วมประชุม/อบรม/สัมมนา</h2>
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs text-slate-500">เรื่อง / หัวข้อการประชุม อบรม หรือสัมมนา</label>
+          <input id="meetingTopicInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1" placeholder="เช่น อบรมเชิงปฏิบัติการงานสังคมสงเคราะห์ ประจำปี 2569">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-500">หน่วยงานผู้จัด</label>
+            <input id="meetingOrganizerInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">สถานที่จัด</label>
+            <input id="meetingLocationInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-500">วันที่เริ่ม</label>
+            <input id="meetingStartInput" type="date" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">วันที่สิ้นสุด</label>
+            <input id="meetingEndInput" type="date" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+          </div>
+        </div>
+        <div class="text-xs text-slate-500">รวม <span id="meetingTotalDaysDisplay" class="font-semibold text-teal-700">0</span> วัน (แต้ม P4P ที่จะได้รับเมื่ออนุมัติ ≈ <span id="meetingTotalPointsDisplay" class="font-semibold text-teal-700">0</span> แต้ม)</div>
+        <div>
+          <label class="text-xs text-slate-500">มีความสำคัญและเป็นประโยชน์แก่ทางราชการ คือ</label>
+          <textarea id="meetingReasonInput" rows="2" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-500">การเบิกค่าใช้จ่าย</label>
+            <select id="meetingExpenseTypeInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+              <option value="ไม่เบิกค่าใช้จ่าย">ไม่เบิกค่าใช้จ่าย</option>
+              <option value="เบิกจากผู้จัด">เบิกจากผู้จัด</option>
+              <option value="เบิกจากโรงพยาบาล">เบิกจากโรงพยาบาล</option>
+              <option value="อื่นๆ">อื่นๆ</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">หมายเหตุค่าใช้จ่าย (ถ้ามี)</label>
+            <input id="meetingExpenseNoteInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+          </div>
+        </div>
+        <p class="text-xs text-amber-600">เมื่อได้รับอนุมัติแล้ว ระบบจะบันทึกแต้ม P4P หมวด "5. งานวิชาการ" ให้อัตโนมัติตามจำนวนวันที่เข้าร่วม (วันละ 59.00 แต้ม) โดยจะไปปรากฏเป็นรายการที่ล็อกไว้ในหน้า "บันทึกผลการปฏิบัติงานประจำวัน" ของวันที่เริ่มต้น</p>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button id="btnCancelMeetingModal" class="px-4 py-2 text-sm rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700">ยกเลิก</button>
+        <button id="btnSubmitMeeting" class="px-4 py-2 text-sm rounded-lg bg-teal-700 hover:bg-teal-800 text-white">ยื่นคำขอ</button>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+
+<script>
+  var MEETING_POINT_PER_UNIT_CLIENT = 59.00;
+  var _myMeetings = [];
+  var _allMeetings = [];
+
+  function initMeetingsPage() {
+    document.getElementById('btnNewMeeting').addEventListener('click', openMeetingModal);
+    document.getElementById('btnCancelMeetingModal').addEventListener('click', closeMeetingModal);
+    document.getElementById('btnSubmitMeeting').addEventListener('click', submitNewMeeting);
+    document.getElementById('meetingStartInput').addEventListener('change', updateMeetingTotalDaysDisplay);
+    document.getElementById('meetingEndInput').addEventListener('change', updateMeetingTotalDaysDisplay);
+
+    if (APP.user.role === 'admin' || APP.user.role === 'head') {
+      document.getElementById('adminMeetingSection').classList.remove('hidden');
+      loadAllMeetings();
+    }
+
+    loadMyMeetings();
+    loadMyMeetingStats();
+  }
+
+  function loadMyMeetingStats() {
+    callServer('getMyMeetingStats', APP.token).then(function(stats) {
+      document.getElementById('meetingStatsFY').textContent = stats.fiscalYearBE;
+      document.getElementById('meetingStatCount').textContent = stats.totalRequests + ' ครั้ง';
+      document.getElementById('meetingStatDays').textContent = stats.totalDays + ' วัน';
+      document.getElementById('meetingStatPoints').textContent = numFmt(stats.totalDays * MEETING_POINT_PER_UNIT_CLIENT, 2) + ' แต้ม';
+    }).catch(function(err) { fireError(err); });
+  }
+
+  function openMeetingModal() {
+    document.getElementById('meetingTopicInput').value = '';
+    document.getElementById('meetingOrganizerInput').value = '';
+    document.getElementById('meetingLocationInput').value = '';
+    document.getElementById('meetingStartInput').value = '';
+    document.getElementById('meetingEndInput').value = '';
+    document.getElementById('meetingReasonInput').value = '';
+    document.getElementById('meetingExpenseTypeInput').value = 'ไม่เบิกค่าใช้จ่าย';
+    document.getElementById('meetingExpenseNoteInput').value = '';
+    document.getElementById('meetingTotalDaysDisplay').textContent = '0';
+    document.getElementById('meetingTotalPointsDisplay').textContent = '0';
+    document.getElementById('meetingModal').classList.remove('hidden');
+  }
+
+  function closeMeetingModal() {
+    document.getElementById('meetingModal').classList.add('hidden');
+  }
+
+  function updateMeetingTotalDaysDisplay() {
+    var start = document.getElementById('meetingStartInput').value;
+    var end = document.getElementById('meetingEndInput').value;
+    var daysEl = document.getElementById('meetingTotalDaysDisplay');
+    var ptsEl = document.getElementById('meetingTotalPointsDisplay');
+    if (!start || !end) { daysEl.textContent = '0'; ptsEl.textContent = '0'; return; }
+    var d1 = new Date(start), d2 = new Date(end);
+    if (d2 < d1) { daysEl.textContent = '0'; ptsEl.textContent = '0'; return; }
+    var days = Math.round((d2 - d1) / (24 * 60 * 60 * 1000)) + 1;
+    daysEl.textContent = days;
+    ptsEl.textContent = numFmt(days * MEETING_POINT_PER_UNIT_CLIENT, 2);
+  }
+
+  function submitNewMeeting() {
+    var payload = {
+      topic: document.getElementById('meetingTopicInput').value.trim(),
+      organizer: document.getElementById('meetingOrganizerInput').value.trim(),
+      location: document.getElementById('meetingLocationInput').value.trim(),
+      startDate: document.getElementById('meetingStartInput').value,
+      endDate: document.getElementById('meetingEndInput').value,
+      reason: document.getElementById('meetingReasonInput').value.trim(),
+      expenseType: document.getElementById('meetingExpenseTypeInput').value,
+      expenseNote: document.getElementById('meetingExpenseNoteInput').value.trim()
+    };
+    if (!payload.topic || !payload.startDate || !payload.endDate) {
+      toast('error', 'กรุณากรอกเรื่อง วันที่เริ่ม และวันที่สิ้นสุดให้ครบถ้วน');
+      return;
+    }
+    if (new Date(payload.startDate) > new Date(payload.endDate)) {
+      toast('error', 'วันที่เริ่มต้องไม่เกินวันที่สิ้นสุด');
+      return;
+    }
+
+    showLoading(true);
+    callServer('submitMeetingRequest', APP.token, payload).then(function(res) {
+      showLoading(false);
+      if (!res.ok) { toast('error', res.message); return; }
+      toast('success', res.message);
+      closeMeetingModal();
+      loadMyMeetings();
+      if (APP.user.role === 'admin' || APP.user.role === 'head') loadAllMeetings();
+    }).catch(function(err) { showLoading(false); fireError(err); });
+  }
+
+  function loadMyMeetings() {
+    callServer('getMyMeetingRequests', APP.token).then(function(list) {
+      list = list || [];
+      _myMeetings = list;
+      renderMyMeetings(list);
+    }).catch(function(err) { fireError(err); });
+  }
+
+  function meetingStatusBadge_(status) {
+    var map = {
+      'รออนุมัติ': 'bg-amber-100 text-amber-700',
+      'อนุมัติ': 'bg-emerald-100 text-emerald-700',
+      'ไม่อนุมัติ': 'bg-rose-100 text-rose-700',
+      'ยกเลิก': 'bg-slate-200 text-slate-500'
+    };
+    return '<span class="text-xs px-2 py-1 rounded-full ' + (map[status] || 'bg-slate-100 text-slate-500') + '">' + status + '</span>';
+  }
+
+  function renderMyMeetings(list) {
+    var tbody = document.getElementById('myMeetingTableBody');
+    var empty = document.getElementById('myMeetingEmpty');
+    tbody.innerHTML = '';
+    empty.classList.toggle('hidden', list.length > 0);
+
+    list.forEach(function(r) {
+      var tr = document.createElement('tr');
+      var canCancel = (r.status === 'รออนุมัติ' || r.status === 'อนุมัติ');
+      tr.innerHTML =
+        '<td class="px-2 py-2 text-center font-mono text-xs">' + r.requestId + '</td>' +
+        '<td class="px-2 py-2">' + r.topic + '</td>' +
+        '<td class="px-2 py-2 text-center text-xs">' + formatThaiDateRangeM_(r.startDate, r.endDate) + '</td>' +
+        '<td class="px-2 py-2 text-center">' + r.totalDays + '</td>' +
+        '<td class="px-2 py-2 text-center">' + meetingStatusBadge_(r.status) + '</td>' +
+        '<td class="px-2 py-2 text-center whitespace-nowrap">' +
+          '<button class="text-teal-700 text-xs mr-2 btn-print-meeting" data-id="' + r.requestId + '">📄 พิมพ์</button>' +
+          (canCancel ? '<button class="text-rose-600 text-xs btn-cancel-meeting" data-id="' + r.requestId + '">ยกเลิก</button>' : '') +
+        '</td>';
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('.btn-print-meeting').forEach(function(btn) {
+      btn.addEventListener('click', function() { printMeetingForm(btn.dataset.id); });
+    });
+    tbody.querySelectorAll('.btn-cancel-meeting').forEach(function(btn) {
+      btn.addEventListener('click', function() { confirmCancelMeeting(btn.dataset.id); });
+    });
+  }
+
+  function loadAllMeetings() {
+    callServer('getAllMeetingRequests', APP.token).then(function(list) {
+      if (list && list.__error) {
+        Swal.fire({
+          icon: 'error', title: 'พบข้อผิดพลาดจริงในเซิร์ฟเวอร์ (getAllMeetingRequests)',
+          html: '<div style="text-align:left;font-size:12px;"><b>ข้อความ:</b> ' + list.message + '<br><b>Stack:</b><pre style="white-space:pre-wrap;font-size:10px;">' + list.stack + '</pre></div>'
+        });
+        list = [];
+      }
+      list = list || [];
+      _allMeetings = list;
+      renderAllMeetings(list);
+    }).catch(function(err) { fireError(err); });
+  }
+
+  function renderAllMeetings(list) {
+    var tbody = document.getElementById('allMeetingTableBody');
+    tbody.innerHTML = '';
+    list.forEach(function(r) {
+      var tr = document.createElement('tr');
+      var canReview = (r.status === 'รออนุมัติ');
+      var canCancel = (r.status === 'รออนุมัติ' || r.status === 'อนุมัติ');
+      tr.innerHTML =
+        '<td class="px-2 py-2">' + r.fullName + '</td>' +
+        '<td class="px-2 py-2">' + r.topic + '</td>' +
+        '<td class="px-2 py-2 text-center text-xs">' + formatThaiDateRangeM_(r.startDate, r.endDate) + '</td>' +
+        '<td class="px-2 py-2 text-center">' + r.totalDays + '</td>' +
+        '<td class="px-2 py-2 text-center">' + meetingStatusBadge_(r.status) + '</td>' +
+        '<td class="px-2 py-2 text-center whitespace-nowrap">' +
+          (canReview ? '<button class="text-emerald-600 text-xs mr-2 btn-approve-meeting" data-id="' + r.requestId + '">อนุมัติ</button><button class="text-rose-600 text-xs mr-2 btn-reject-meeting" data-id="' + r.requestId + '">ปฏิเสธ</button>' : '') +
+          (canCancel ? '<button class="text-slate-500 text-xs btn-cancel-meeting-admin" data-id="' + r.requestId + '">ยกเลิก</button>' : '') +
+        '</td>';
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('.btn-approve-meeting').forEach(function(btn) {
+      btn.addEventListener('click', function() { approveMeeting(btn.dataset.id); });
+    });
+    tbody.querySelectorAll('.btn-reject-meeting').forEach(function(btn) {
+      btn.addEventListener('click', function() { rejectMeeting(btn.dataset.id); });
+    });
+    tbody.querySelectorAll('.btn-cancel-meeting-admin').forEach(function(btn) {
+      btn.addEventListener('click', function() { confirmCancelMeeting(btn.dataset.id); });
+    });
+  }
+
+  function approveMeeting(requestId) {
+    Swal.fire({ icon: 'question', title: 'อนุมัติคำขอนี้?', text: 'ระบบจะบันทึกแต้ม P4P ให้อัตโนมัติ', showCancelButton: true, confirmButtonText: 'อนุมัติ', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#0d9488' })
+      .then(function(result) {
+        if (!result.isConfirmed) return;
+        showLoading(true);
+        callServer('approveMeetingRequest', APP.token, requestId).then(function(res) {
+          showLoading(false);
+          if (!res.ok) { toast('error', res.message); return; }
+          toast('success', res.message);
+          loadAllMeetings();
+        }).catch(function(err) { showLoading(false); fireError(err); });
+      });
+  }
+
+  function rejectMeeting(requestId) {
+    Swal.fire({
+      icon: 'warning', title: 'ปฏิเสธคำขอนี้?', input: 'text', inputPlaceholder: 'ระบุเหตุผล (ถ้ามี)',
+      showCancelButton: true, confirmButtonText: 'ปฏิเสธ', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#e11d48'
+    }).then(function(result) {
+      if (!result.isConfirmed) return;
+      showLoading(true);
+      callServer('rejectMeetingRequest', APP.token, requestId, result.value || '').then(function(res) {
+        showLoading(false);
+        toast('success', res.message);
+        loadAllMeetings();
+      }).catch(function(err) { showLoading(false); fireError(err); });
+    });
+  }
+
+  function confirmCancelMeeting(requestId) {
+    Swal.fire({
+      icon: 'warning', title: 'ยืนยันการยกเลิกคำขอนี้?', input: 'text', inputPlaceholder: 'เหตุผลที่ขอยกเลิก (ถ้ามี)',
+      text: 'หากคำขอนี้เคยได้รับอนุมัติแล้ว แต้ม P4P ที่เคยให้ไว้จะถูกปรับปรุงออกด้วย',
+      showCancelButton: true, confirmButtonText: 'ยืนยันยกเลิก', cancelButtonText: 'ปิด', confirmButtonColor: '#e11d48'
+    }).then(function(result) {
+      if (!result.isConfirmed) return;
+      showLoading(true);
+      callServer('cancelMeetingRequest', APP.token, requestId, result.value || '').then(function(res) {
+        showLoading(false);
+        toast('success', res.message);
+        loadMyMeetings();
+        loadMyMeetingStats();
+        if (APP.user.role === 'admin' || APP.user.role === 'head') loadAllMeetings();
+      }).catch(function(err) { showLoading(false); fireError(err); });
+    });
+  }
+
+  function formatThaiDateRangeM_(startDate, endDate) {
+    var s = formatThaiDateM_(startDate);
+    var e = formatThaiDateM_(endDate);
+    return startDate === endDate ? s : (s + ' — ' + e);
+  }
+
+  function formatThaiDateM_(dateStr) {
+    var d = new Date(dateStr + 'T00:00:00');
+    return d.getDate() + ' ' + APP.THAI_MONTHS[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+  }
+
+  /**
+   * พิมพ์แบบฟอร์ม "บันทึกข้อความ ขออนุมัติเข้าร่วมประชุม/อบรม/สัมมนา" ตามแบบฟอร์มต้นฉบับของฝ่าย
+   * ทรัพยากรบุคคล (ช่องรายละเอียดค่าใช้จ่ายและช่องลงนามเว้นว่างไว้ให้กรอก/เซ็นด้วยลายมือตามระเบียบ)
+   */
+  function printMeetingForm(requestId) {
+    showLoading(true);
+    callServer('getMeetingRequestPrintData', APP.token, requestId).then(function(data) {
+      showLoading(false);
+      renderMeetingPrintForm(data);
+    }).catch(function(err) { showLoading(false); fireError(err); });
+  }
+
+  function renderMeetingPrintForm(data) {
+    var r = data.request, u = data.user;
+    var expenseBoxes = ['ไม่เบิกค่าใช้จ่าย', 'เบิกจากผู้จัด', 'เบิกจากโรงพยาบาล', 'อื่นๆ'].map(function(opt) {
+      var mark = (r.expenseType === opt) ? '☑' : '☐';
+      return mark + ' ' + opt + (opt === 'อื่นๆ' && r.expenseType === 'อื่นๆ' && r.expenseNote ? ' (' + r.expenseNote + ')' : '');
+    }).join('&nbsp;&nbsp;&nbsp;&nbsp;');
+
+    var html =
+      '<div class="print-doc" style="font-size:13px;line-height:1.7;">' +
+      '<div style="text-align:center;font-weight:700;font-size:16px;">บันทึกข้อความ</div>' +
+      '<div style="margin-top:6px;">ส่วนราชการ &nbsp;กลุ่มงานสังคมสงเคราะห์ โรงพยาบาลสมเด็จพระสังฆราช (อมฺพรมหาเถร) โทร ๖๒๒</div>' +
+      '<div>ที่ &nbsp;รบ ๐๐๓๓.๒/๐๓/......................&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;วันที่ ......................................</div>' +
+      '<div>เรื่อง &nbsp;ขออนุมัติเข้าร่วมประชุม/อบรม/สัมมนา</div>' +
+      '<div style="margin-top:6px;">เรียน &nbsp;ผู้อำนวยการโรงพยาบาลสมเด็จพระสังฆราช (อมฺพรมหาเถร)</div>' +
+      '<div style="margin-top:6px;">&nbsp;&nbsp;&nbsp;&nbsp;ข้าพเจ้า ' + u.fullName + ' &nbsp;&nbsp;ตำแหน่ง ' + (u.position || '') + ' &nbsp;&nbsp;ระดับ ......................</div>' +
+      '<div>กลุ่มงาน &nbsp;สังคมสงเคราะห์ &nbsp;&nbsp;&nbsp;&nbsp;กลุ่มภารกิจด้าน ......................................................</div>' +
+      '<div style="margin-top:6px;">มีความประสงค์จะขอร่วมประชุม/อบรม/สัมมนา เรื่อง <b>' + r.topic + '</b></div>' +
+      '<div>เลขที่ พรส. ...................... &nbsp;ซึ่ง ' + (r.organizer || '......................') + ' &nbsp;เป็นผู้จัด ณ ' + (r.location || '......................') + '</div>' +
+      '<div>ตั้งแต่วันที่ ' + formatThaiDateM_(r.startDate) + ' &nbsp;&nbsp;ถึงวันที่ ' + formatThaiDateM_(r.endDate) + ' &nbsp;&nbsp;(รวม ' + r.totalDays + ' วัน)</div>' +
+      '<div style="margin-top:6px;">มีความสำคัญและเป็นประโยชน์แก่ทางราชการ คือ ' + (r.reason || '......................................................') + '</div>' +
+      '<div style="margin-top:10px;">การเดินทางไปประชุม/อบรม/สัมมนาครั้งนี้ ข้าพเจ้าขออนุมัติไปโดยไม่ถือเป็นวันลาและเบิกค่าใช้จ่ายต่าง ๆ</div>' +
+      '<div>ตามระเบียบ คือ &nbsp;' + expenseBoxes + '</div>' +
+      '<div style="margin-top:10px;color:#64748b;font-size:11px;">(รายละเอียดค่าใช้จ่าย ๑-๕ และความเห็น/ลงนามผู้เกี่ยวข้อง กรุณากรอกและลงนามด้วยลายมือตามระเบียบก่อนนำส่งฝ่ายทรัพยากรบุคคล)</div>' +
+      '<div style="margin-top:40px;text-align:right;">ลงชื่อ..................................................<br>(' + u.fullName + ')<br>ผู้ขออนุมัติ</div>' +
+      '<div style="display:flex;justify-content:space-between;margin-top:50px;">' +
+      '<div style="width:45%;">ความเห็นของหัวหน้างาน/หัวหน้ากลุ่มงาน<br><br><br>ลงชื่อ..................................................<br>(..........................................................)<br>วันที่.........เดือน..........................พ.ศ...............</div>' +
+      '<div style="width:45%;">ความเห็นของหัวหน้ากลุ่มภารกิจ<br><br><br>ลงชื่อ..................................................<br>(..........................................................)<br>วันที่.........เดือน..........................พ.ศ...............</div>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;margin-top:30px;">' +
+      '<div style="width:45%;">ความเห็นของหัวหน้ากลุ่มภารกิจด้าน พรส.<br><br><br>ลงชื่อ..................................................<br>(..........................................................)<br>วันที่.........เดือน..........................พ.ศ...............</div>' +
+      '<div style="width:45%;">คำสั่ง/ข้อสั่งการ &nbsp;☐ อนุมัติ &nbsp;☐ ไม่อนุมัติ เพราะ......................<br><br>ลงชื่อ..................................................<br>(..........................................................)<br>ผู้อำนวยการโรงพยาบาลสมเด็จพระสังฆราช (อมฺพรมหาเถร)</div>' +
+      '</div>' +
+      '</div>';
+
+    var safeName = (u.fullName || '').replace(/\s+/g, '');
+    openPrint(html, 'portrait', 'ขออนุมัติเข้าร่วมประชุม_' + safeName + '_' + r.requestId);
+  }
+</script>
