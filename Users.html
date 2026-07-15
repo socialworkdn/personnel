@@ -49,6 +49,16 @@
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
+            <label class="text-xs text-slate-500">ระดับ</label>
+            <input id="userLevel" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1" placeholder="เช่น ชำนาญการ">
+          </div>
+          <div>
+            <label class="text-xs text-slate-500">เลขที่ใบประกอบวิชาชีพ</label>
+            <input id="userLicenseNo" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
             <label class="text-xs text-slate-500">สิทธิ์การใช้งาน</label>
             <select id="userRole" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
               <option value="staff">เจ้าหน้าที่ (staff)</option>
@@ -146,6 +156,8 @@
       document.getElementById('userPassword').value = '';
       document.getElementById('userFullName').value = '';
       document.getElementById('userPosition').value = '';
+      document.getElementById('userLevel').value = '';
+      document.getElementById('userLicenseNo').value = '';
       document.getElementById('userRole').value = 'staff';
       document.getElementById('userMinPoints').value = 1200;
       document.getElementById('userProfCategory').value = '1';
@@ -158,6 +170,8 @@
       document.getElementById('userPassword').value = '';
       document.getElementById('userFullName').value = u.fullName;
       document.getElementById('userPosition').value = u.position || '';
+      document.getElementById('userLevel').value = u.level || '';
+      document.getElementById('userLicenseNo').value = u.licenseNo || '';
       document.getElementById('userRole').value = u.role;
       document.getElementById('userMinPoints').value = u.minGuaranteePoints;
       document.getElementById('userProfCategory').value = String(u.professionalCategory || 1);
@@ -176,6 +190,8 @@
       password: document.getElementById('userPassword').value,
       fullName: document.getElementById('userFullName').value.trim(),
       position: document.getElementById('userPosition').value.trim(),
+      level: document.getElementById('userLevel').value.trim(),
+      licenseNo: document.getElementById('userLicenseNo').value.trim(),
       role: document.getElementById('userRole').value,
       minGuaranteePoints: Number(document.getElementById('userMinPoints').value) || 0,
       professionalCategory: Number(document.getElementById('userProfCategory').value) || 1,
