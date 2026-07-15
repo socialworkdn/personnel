@@ -15,6 +15,8 @@
           <th class="px-2 py-2">Username</th>
           <th class="px-2 py-2 text-left">ชื่อ-นามสกุล</th>
           <th class="px-2 py-2">ตำแหน่ง</th>
+          <th class="px-2 py-2">ระดับ</th>
+          <th class="px-2 py-2">เลขที่ใบประกอบวิชาชีพ</th>
           <th class="px-2 py-2">สิทธิ์การใช้งาน</th>
           <th class="px-2 py-2">แต้มประกันขั้นต่ำ</th>
           <th class="px-2 py-2">สถานะ</th>
@@ -125,6 +127,8 @@
         '<td class="px-2 py-2 text-center font-mono text-xs">' + u.username + '</td>' +
         '<td class="px-2 py-2">' + u.fullName + '</td>' +
         '<td class="px-2 py-2 text-center">' + (u.position || '') + '</td>' +
+        '<td class="px-2 py-2 text-center">' + (u.level || '-') + '</td>' +
+        '<td class="px-2 py-2 text-center">' + (u.licenseNo || '-') + '</td>' +
         '<td class="px-2 py-2 text-center">' + roleLabel + '</td>' +
         '<td class="px-2 py-2 text-center">' + numFmt(u.minGuaranteePoints, 2) + '</td>' +
         '<td class="px-2 py-2 text-center">' + (u.active ? '<span class="text-emerald-600">ใช้งาน</span>' : '<span class="text-slate-400">ระงับ</span>') + '</td>' +
