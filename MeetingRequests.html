@@ -95,6 +95,102 @@
           <label class="text-xs text-slate-500">มีความสำคัญและเป็นประโยชน์แก่ทางราชการ คือ</label>
           <textarea id="meetingReasonInput" rows="2" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1"></textarea>
         </div>
+
+        <button type="button" id="btnToggleMeetingDetails" class="text-xs text-teal-700 hover:text-teal-900 font-medium">+ รายละเอียดเพิ่มเติม (สำหรับแบบฟอร์มขออนุมัติ)</button>
+
+        <div id="meetingDetailsSection" class="hidden space-y-3 border-t border-slate-200 pt-3 mt-1">
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="text-xs text-slate-500">ระดับ</label>
+              <input id="meetingLevelInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+            </div>
+            <div>
+              <label class="text-xs text-slate-500">เลขที่ใบประกอบวิชาชีพ</label>
+              <input id="meetingLicenseInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+            </div>
+            <div>
+              <label class="text-xs text-slate-500">เลขที่ พรส.</label>
+              <input id="meetingPrsInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs text-slate-500">การเดินทาง (เลือกได้มากกว่า 1)</label>
+            <div class="flex gap-4 mt-1">
+              <label class="flex items-center gap-1.5 text-sm text-slate-600"><input type="checkbox" id="meetingTravelOfficial" value="ใช้วันราชการไป"> ใช้วันราชการไป</label>
+              <label class="flex items-center gap-1.5 text-sm text-slate-600"><input type="checkbox" id="meetingTravelPersonal" value="ใช้วันหยุดส่วนตัวไป"> ใช้วันหยุดส่วนตัวไป</label>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 rounded-lg p-3 space-y-3">
+            <div class="text-xs font-semibold text-slate-600">ประมาณการค่าใช้จ่าย (ถ้ามี)</div>
+
+            <div>
+              <label class="text-xs text-slate-500">1. ค่าพาหนะ</label>
+              <select id="meetingTransportTypeInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+                <option value="">ไม่มี</option>
+                <option value="รถยนต์ราชการ">รถยนต์ราชการ (เขียนขอใช้รถส่ง ก.บริหารฯ)</option>
+                <option value="รถรับจ้าง/รถประจำทาง">รถรับจ้าง/รถประจำทาง</option>
+                <option value="รถยนต์ส่วนตัว">รถยนต์ส่วนตัว (เบิกชดเชยน้ำมัน กม.ละ 4 บาท)</option>
+              </select>
+              <div id="meetingTransportAmountWrap" class="hidden mt-2">
+                <label class="text-xs text-slate-500">จำนวนเงิน (บาท)</label>
+                <input id="meetingTransportAmountInput" type="number" step="0.01" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+              </div>
+              <div id="meetingTransportPersonalWrap" class="hidden grid grid-cols-2 gap-3 mt-2">
+                <div>
+                  <label class="text-xs text-slate-500">ทะเบียนรถ</label>
+                  <input id="meetingTransportPlateInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+                </div>
+                <div>
+                  <label class="text-xs text-slate-500">ระยะทางไป-กลับ (กม.)</label>
+                  <input id="meetingTransportKmInput" type="number" step="0.1" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 items-end">
+              <div class="col-span-2">
+                <label class="text-xs text-slate-500">2. ค่าเช่าที่พัก (บาท/คืน)</label>
+                <input id="meetingAccomRateInput" type="number" step="0.01" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+              </div>
+              <div>
+                <label class="text-xs text-slate-500">จำนวนคืน</label>
+                <input id="meetingAccomNightsInput" type="number" step="1" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 items-end">
+              <div class="col-span-2">
+                <label class="text-xs text-slate-500">3. ค่าเบี้ยเลี้ยง (บาท/วัน)</label>
+                <input id="meetingPerDiemRateInput" type="number" step="0.01" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+              </div>
+              <div>
+                <label class="text-xs text-slate-500">จำนวนวัน</label>
+                <input id="meetingPerDiemNightsInput" type="number" step="1" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+              </div>
+            </div>
+
+            <div>
+              <label class="text-xs text-slate-500">4. ค่าลงทะเบียน (บาท)</label>
+              <input id="meetingRegistrationInput" type="number" step="0.01" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+              <div class="col-span-2">
+                <label class="text-xs text-slate-500">5. อื่นๆ (ระบุ)</label>
+                <input id="meetingOtherNoteInput" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+              </div>
+              <div>
+                <label class="text-xs text-slate-500">จำนวนเงิน (บาท)</label>
+                <input id="meetingOtherAmountInput" type="number" step="0.01" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mt-1">
+              </div>
+            </div>
+
+            <div class="text-sm text-right text-slate-700 border-t border-slate-200 pt-2">รวมเป็นเงินทั้งสิ้น (โดยประมาณ) <span id="meetingCostTotalDisplay" class="font-semibold text-teal-700">0.00</span> บาท</div>
+          </div>
+        </div>
+
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="text-xs text-slate-500">การเบิกค่าใช้จ่าย</label>
@@ -132,6 +228,11 @@
     document.getElementById('btnSubmitMeeting').addEventListener('click', submitNewMeeting);
     document.getElementById('meetingStartInput').addEventListener('change', updateMeetingTotalDaysDisplay);
     document.getElementById('meetingEndInput').addEventListener('change', updateMeetingTotalDaysDisplay);
+    document.getElementById('btnToggleMeetingDetails').addEventListener('click', toggleMeetingDetails);
+    document.getElementById('meetingTransportTypeInput').addEventListener('change', updateTransportFieldsVisibility);
+    ['meetingTransportAmountInput', 'meetingTransportKmInput', 'meetingAccomRateInput', 'meetingAccomNightsInput',
+      'meetingPerDiemRateInput', 'meetingPerDiemNightsInput', 'meetingRegistrationInput', 'meetingOtherAmountInput'
+    ].forEach(function(id) { document.getElementById(id).addEventListener('input', updateMeetingCostTotal); });
 
     if (APP.user.role === 'admin' || APP.user.role === 'head') {
       document.getElementById('adminMeetingSection').classList.remove('hidden');
@@ -140,6 +241,38 @@
 
     loadMyMeetings();
     loadMyMeetingStats();
+  }
+
+  function toggleMeetingDetails() {
+    var section = document.getElementById('meetingDetailsSection');
+    var btn = document.getElementById('btnToggleMeetingDetails');
+    var willShow = section.classList.contains('hidden');
+    section.classList.toggle('hidden', !willShow);
+    btn.textContent = willShow ? '− ซ่อนรายละเอียดเพิ่มเติม' : '+ รายละเอียดเพิ่มเติม (สำหรับแบบฟอร์มขออนุมัติ)';
+  }
+
+  function updateTransportFieldsVisibility() {
+    var type = document.getElementById('meetingTransportTypeInput').value;
+    document.getElementById('meetingTransportAmountWrap').classList.toggle('hidden', type !== 'รถรับจ้าง/รถประจำทาง');
+    document.getElementById('meetingTransportPersonalWrap').classList.toggle('hidden', type !== 'รถยนต์ส่วนตัว');
+    updateMeetingCostTotal();
+  }
+
+  function updateMeetingCostTotal() {
+    var transportType = document.getElementById('meetingTransportTypeInput').value;
+    var transportAmount = 0;
+    if (transportType === 'รถรับจ้าง/รถประจำทาง') {
+      transportAmount = Number(document.getElementById('meetingTransportAmountInput').value) || 0;
+    } else if (transportType === 'รถยนต์ส่วนตัว') {
+      var km = Number(document.getElementById('meetingTransportKmInput').value) || 0;
+      transportAmount = km * 4;
+    }
+    var accomTotal = (Number(document.getElementById('meetingAccomRateInput').value) || 0) * (Number(document.getElementById('meetingAccomNightsInput').value) || 0);
+    var perDiemTotal = (Number(document.getElementById('meetingPerDiemRateInput').value) || 0) * (Number(document.getElementById('meetingPerDiemNightsInput').value) || 0);
+    var registration = Number(document.getElementById('meetingRegistrationInput').value) || 0;
+    var other = Number(document.getElementById('meetingOtherAmountInput').value) || 0;
+    var total = transportAmount + accomTotal + perDiemTotal + registration + other;
+    document.getElementById('meetingCostTotalDisplay').textContent = numFmt(total, 2);
   }
 
   function loadMyMeetingStats() {
@@ -162,6 +295,27 @@
     document.getElementById('meetingExpenseNoteInput').value = '';
     document.getElementById('meetingTotalDaysDisplay').textContent = '0';
     document.getElementById('meetingTotalPointsDisplay').textContent = '0';
+
+    document.getElementById('meetingLevelInput').value = '';
+    document.getElementById('meetingLicenseInput').value = '';
+    document.getElementById('meetingPrsInput').value = '';
+    document.getElementById('meetingTravelOfficial').checked = false;
+    document.getElementById('meetingTravelPersonal').checked = false;
+    document.getElementById('meetingTransportTypeInput').value = '';
+    document.getElementById('meetingTransportAmountInput').value = '';
+    document.getElementById('meetingTransportPlateInput').value = '';
+    document.getElementById('meetingTransportKmInput').value = '';
+    document.getElementById('meetingAccomRateInput').value = '';
+    document.getElementById('meetingAccomNightsInput').value = '';
+    document.getElementById('meetingPerDiemRateInput').value = '';
+    document.getElementById('meetingPerDiemNightsInput').value = '';
+    document.getElementById('meetingRegistrationInput').value = '';
+    document.getElementById('meetingOtherNoteInput').value = '';
+    document.getElementById('meetingOtherAmountInput').value = '';
+    updateTransportFieldsVisibility();
+    document.getElementById('meetingDetailsSection').classList.add('hidden');
+    document.getElementById('btnToggleMeetingDetails').textContent = '+ รายละเอียดเพิ่มเติม (สำหรับแบบฟอร์มขออนุมัติ)';
+
     document.getElementById('meetingModal').classList.remove('hidden');
   }
 
@@ -183,6 +337,10 @@
   }
 
   function submitNewMeeting() {
+    var travelDayTypes = [];
+    if (document.getElementById('meetingTravelOfficial').checked) travelDayTypes.push('ใช้วันราชการไป');
+    if (document.getElementById('meetingTravelPersonal').checked) travelDayTypes.push('ใช้วันหยุดส่วนตัวไป');
+
     var payload = {
       topic: document.getElementById('meetingTopicInput').value.trim(),
       organizer: document.getElementById('meetingOrganizerInput').value.trim(),
@@ -191,7 +349,22 @@
       endDate: document.getElementById('meetingEndInput').value,
       reason: document.getElementById('meetingReasonInput').value.trim(),
       expenseType: document.getElementById('meetingExpenseTypeInput').value,
-      expenseNote: document.getElementById('meetingExpenseNoteInput').value.trim()
+      expenseNote: document.getElementById('meetingExpenseNoteInput').value.trim(),
+      level: document.getElementById('meetingLevelInput').value.trim(),
+      licenseNo: document.getElementById('meetingLicenseInput').value.trim(),
+      prsNo: document.getElementById('meetingPrsInput').value.trim(),
+      travelDayTypes: travelDayTypes,
+      transportType: document.getElementById('meetingTransportTypeInput').value,
+      transportAmount: Number(document.getElementById('meetingTransportAmountInput').value) || 0,
+      transportPlate: document.getElementById('meetingTransportPlateInput').value.trim(),
+      transportKm: Number(document.getElementById('meetingTransportKmInput').value) || 0,
+      accommodationRate: Number(document.getElementById('meetingAccomRateInput').value) || 0,
+      accommodationNights: Number(document.getElementById('meetingAccomNightsInput').value) || 0,
+      perDiemRate: Number(document.getElementById('meetingPerDiemRateInput').value) || 0,
+      perDiemNights: Number(document.getElementById('meetingPerDiemNightsInput').value) || 0,
+      registrationFee: Number(document.getElementById('meetingRegistrationInput').value) || 0,
+      otherExpenseNote: document.getElementById('meetingOtherNoteInput').value.trim(),
+      otherExpenseAmount: Number(document.getElementById('meetingOtherAmountInput').value) || 0
     };
     if (!payload.topic || !payload.startDate || !payload.endDate) {
       toast('error', 'กรุณากรอกเรื่อง วันที่เริ่ม และวันที่สิ้นสุดให้ครบถ้วน');
@@ -366,52 +539,20 @@
   }
 
   /**
-   * พิมพ์แบบฟอร์ม "บันทึกข้อความ ขออนุมัติเข้าร่วมประชุม/อบรม/สัมมนา" ตามแบบฟอร์มต้นฉบับของฝ่าย
-   * ทรัพยากรบุคคล (ช่องรายละเอียดค่าใช้จ่ายและช่องลงนามเว้นว่างไว้ให้กรอก/เซ็นด้วยลายมือตามระเบียบ)
+   * พิมพ์แบบฟอร์ม "บันทึกข้อความ ขออนุมัติเข้าร่วมประชุม/อบรม/สัมมนา" — สร้าง PDF จริงจาก Template
+   * Google Sheet ต้นฉบับ (เทคนิคเดียวกับใบลา) แล้วดาวน์โหลดเป็นไฟล์ ช่องรายละเอียดค่าใช้จ่ายที่ไม่ได้
+   * กรอกไว้และช่องลงนามผู้เกี่ยวข้องเว้นว่างไว้ให้กรอก/เซ็นด้วยลายมือตามระเบียบก่อนนำส่งฝ่ายทรัพยากรบุคคล
    */
   function printMeetingForm(requestId) {
     showLoading(true);
-    callServer('getMeetingRequestPrintData', APP.token, requestId).then(function(data) {
+    callServer('generateMeetingRequestPdf', APP.token, requestId).then(function(res) {
       showLoading(false);
-      renderMeetingPrintForm(data);
+      if (!res || !res.ok) {
+        toast('error', 'ไม่สามารถสร้างไฟล์ PDF ได้');
+        return;
+      }
+      downloadBase64Pdf_(res.base64, res.filename);
+      toast('success', 'สร้างไฟล์ PDF เรียบร้อยแล้ว');
     }).catch(function(err) { showLoading(false); fireError(err); });
-  }
-
-  function renderMeetingPrintForm(data) {
-    var r = data.request, u = data.user;
-    var expenseBoxes = ['ไม่เบิกค่าใช้จ่าย', 'เบิกจากผู้จัด', 'เบิกจากโรงพยาบาล', 'อื่นๆ'].map(function(opt) {
-      var mark = (r.expenseType === opt) ? '☑' : '☐';
-      return mark + ' ' + opt + (opt === 'อื่นๆ' && r.expenseType === 'อื่นๆ' && r.expenseNote ? ' (' + r.expenseNote + ')' : '');
-    }).join('&nbsp;&nbsp;&nbsp;&nbsp;');
-
-    var html =
-      '<div class="print-doc" style="font-size:13px;line-height:1.7;">' +
-      '<div style="text-align:center;font-weight:700;font-size:16px;">บันทึกข้อความ</div>' +
-      '<div style="margin-top:6px;">ส่วนราชการ &nbsp;กลุ่มงานสังคมสงเคราะห์ โรงพยาบาลสมเด็จพระสังฆราช (อมฺพรมหาเถร) โทร ๖๒๒</div>' +
-      '<div>ที่ &nbsp;รบ ๐๐๓๓.๒/๐๓/......................&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;วันที่ ......................................</div>' +
-      '<div>เรื่อง &nbsp;ขออนุมัติเข้าร่วมประชุม/อบรม/สัมมนา</div>' +
-      '<div style="margin-top:6px;">เรียน &nbsp;ผู้อำนวยการโรงพยาบาลสมเด็จพระสังฆราช (อมฺพรมหาเถร)</div>' +
-      '<div style="margin-top:6px;">&nbsp;&nbsp;&nbsp;&nbsp;ข้าพเจ้า ' + u.fullName + ' &nbsp;&nbsp;ตำแหน่ง ' + (u.position || '') + ' &nbsp;&nbsp;ระดับ ......................</div>' +
-      '<div>กลุ่มงาน &nbsp;สังคมสงเคราะห์ &nbsp;&nbsp;&nbsp;&nbsp;กลุ่มภารกิจด้าน ......................................................</div>' +
-      '<div style="margin-top:6px;">มีความประสงค์จะขอร่วมประชุม/อบรม/สัมมนา เรื่อง <b>' + r.topic + '</b></div>' +
-      '<div>เลขที่ พรส. ...................... &nbsp;ซึ่ง ' + (r.organizer || '......................') + ' &nbsp;เป็นผู้จัด ณ ' + (r.location || '......................') + '</div>' +
-      '<div>ตั้งแต่วันที่ ' + formatThaiDateM_(r.startDate) + ' &nbsp;&nbsp;ถึงวันที่ ' + formatThaiDateM_(r.endDate) + ' &nbsp;&nbsp;(รวม ' + r.totalDays + ' วัน)</div>' +
-      '<div style="margin-top:6px;">มีความสำคัญและเป็นประโยชน์แก่ทางราชการ คือ ' + (r.reason || '......................................................') + '</div>' +
-      '<div style="margin-top:10px;">การเดินทางไปประชุม/อบรม/สัมมนาครั้งนี้ ข้าพเจ้าขออนุมัติไปโดยไม่ถือเป็นวันลาและเบิกค่าใช้จ่ายต่าง ๆ</div>' +
-      '<div>ตามระเบียบ คือ &nbsp;' + expenseBoxes + '</div>' +
-      '<div style="margin-top:10px;color:#64748b;font-size:11px;">(รายละเอียดค่าใช้จ่าย ๑-๕ และความเห็น/ลงนามผู้เกี่ยวข้อง กรุณากรอกและลงนามด้วยลายมือตามระเบียบก่อนนำส่งฝ่ายทรัพยากรบุคคล)</div>' +
-      '<div style="margin-top:40px;text-align:right;">ลงชื่อ..................................................<br>(' + u.fullName + ')<br>ผู้ขออนุมัติ</div>' +
-      '<div style="display:flex;justify-content:space-between;margin-top:50px;">' +
-      '<div style="width:45%;">ความเห็นของหัวหน้างาน/หัวหน้ากลุ่มงาน<br><br><br>ลงชื่อ..................................................<br>(..........................................................)<br>วันที่.........เดือน..........................พ.ศ...............</div>' +
-      '<div style="width:45%;">ความเห็นของหัวหน้ากลุ่มภารกิจ<br><br><br>ลงชื่อ..................................................<br>(..........................................................)<br>วันที่.........เดือน..........................พ.ศ...............</div>' +
-      '</div>' +
-      '<div style="display:flex;justify-content:space-between;margin-top:30px;">' +
-      '<div style="width:45%;">ความเห็นของหัวหน้ากลุ่มภารกิจด้าน พรส.<br><br><br>ลงชื่อ..................................................<br>(..........................................................)<br>วันที่.........เดือน..........................พ.ศ...............</div>' +
-      '<div style="width:45%;">คำสั่ง/ข้อสั่งการ &nbsp;☐ อนุมัติ &nbsp;☐ ไม่อนุมัติ เพราะ......................<br><br>ลงชื่อ..................................................<br>(..........................................................)<br>ผู้อำนวยการโรงพยาบาลสมเด็จพระสังฆราช (อมฺพรมหาเถร)</div>' +
-      '</div>' +
-      '</div>';
-
-    var safeName = (u.fullName || '').replace(/\s+/g, '');
-    openPrint(html, 'portrait', 'ขออนุมัติเข้าร่วมประชุม_' + safeName + '_' + r.requestId);
   }
 </script>
