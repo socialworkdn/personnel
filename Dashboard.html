@@ -40,12 +40,12 @@
     </div>
   </div>
 
-  <!-- ===== หมวด 2: การลา และ การประชุม/อบรม/สัมมนา ===== -->
+  <!-- ===== หมวด 2: การลา ===== -->
   <div class="flex items-center gap-3 mb-3">
-    <h2 class="text-xs font-bold uppercase tracking-wider text-teal-700">การลา และการประชุม/อบรม/สัมมนา</h2>
+    <h2 class="text-xs font-bold uppercase tracking-wider text-teal-700">การลา</h2>
     <div class="flex-1 h-px bg-slate-200"></div>
   </div>
-  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
     <div class="bg-white rounded-xl shadow-sm p-3.5 border-l-4 border-sky-500">
       <div class="text-xs text-slate-500">🏖️ ลาวันนี้</div>
       <div class="text-xl font-bold text-slate-800 mt-1" id="dashOnLeaveTodayCount">-</div>
@@ -58,6 +58,27 @@
       <div class="text-xs text-slate-500 leading-snug" id="dashLeaveDaysLabel">📅 วันลาสะสมเดือนนี้</div>
       <div class="text-xl font-bold text-slate-800 mt-1" id="dashLeaveDaysCount">-</div>
     </div>
+  </div>
+  <p class="text-[11px] text-slate-400 mb-4">ตัวเลขด้านบนนับเฉพาะรายการที่อนุมัติแล้วเท่านั้น เว้นแต่ระบุเป็นอย่างอื่น</p>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+    <div class="bg-white rounded-xl shadow-sm p-4">
+      <h3 class="font-semibold text-slate-700 mb-3 text-sm" id="dashLeaveByTypeLabel">📊 สถิติวันลาแยกตามประเภท (ทั้งกลุ่มงาน)</h3>
+      <div class="grid grid-cols-2 gap-3" id="dashLeaveByTypeCards"></div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm p-4">
+      <h3 class="font-semibold text-slate-700 mb-3 text-sm">🏖️ วันนี้มีใครลาบ้าง</h3>
+      <div id="dashOnLeaveTodayList" class="flex flex-wrap gap-2"></div>
+      <div id="dashOnLeaveTodayEmpty" class="hidden text-sm text-slate-400">วันนี้ไม่มีผู้ลา</div>
+    </div>
+  </div>
+
+  <!-- ===== หมวด 3: การประชุม/อบรม/สัมมนา ===== -->
+  <div class="flex items-center gap-3 mb-3">
+    <h2 class="text-xs font-bold uppercase tracking-wider text-teal-700">การประชุม/อบรม/สัมมนา</h2>
+    <div class="flex-1 h-px bg-slate-200"></div>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
     <div class="bg-white rounded-xl shadow-sm p-3.5 border-l-4 border-indigo-500">
       <div class="text-xs text-slate-500 leading-snug" id="dashMeetingCountLabel">📚 ประชุม/อบรม เดือนนี้</div>
       <div class="text-xl font-bold text-slate-800 mt-1" id="dashMeetingCount">-</div>
@@ -71,25 +92,14 @@
       <div class="text-xl font-bold text-slate-800 mt-1" id="dashPendingMeetingCount">-</div>
     </div>
   </div>
-  <p class="text-[11px] text-slate-400 -mt-3 mb-5">ตัวเลขด้านบนนับเฉพาะรายการที่อนุมัติแล้วเท่านั้น เว้นแต่ระบุเป็นอย่างอื่น</p>
+  <p class="text-[11px] text-slate-400 mb-4">ตัวเลขด้านบนนับเฉพาะรายการที่อนุมัติแล้วเท่านั้น เว้นแต่ระบุเป็นอย่างอื่น</p>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-    <div class="bg-white rounded-xl shadow-sm p-4">
-      <h3 class="font-semibold text-slate-700 mb-3 text-sm" id="dashLeaveByTypeLabel">📊 สถิติวันลาแยกตามประเภท (ทั้งกลุ่มงาน)</h3>
-      <div class="grid grid-cols-2 gap-3" id="dashLeaveByTypeCards"></div>
-    </div>
-    <div class="bg-white rounded-xl shadow-sm p-4">
-      <h3 class="font-semibold text-slate-700 mb-3 text-sm">🏖️ วันนี้มีใครลาบ้าง</h3>
-      <div id="dashOnLeaveTodayList" class="flex flex-wrap gap-2"></div>
-      <div id="dashOnLeaveTodayEmpty" class="hidden text-sm text-slate-400">วันนี้ไม่มีผู้ลา</div>
-    </div>
-    <div class="bg-white rounded-xl shadow-sm p-4">
-      <h3 class="font-semibold text-slate-700 mb-3 text-sm" id="dashMeetingByTypeLabel">📚 สถิติประชุม/อบรม แยกตามประเภท (ทั้งกลุ่มงาน)</h3>
-      <div class="grid grid-cols-2 gap-3" id="dashMeetingByTypeCards"></div>
-    </div>
+  <div class="bg-white rounded-xl shadow-sm p-4 mb-8">
+    <h3 class="font-semibold text-slate-700 mb-3 text-sm" id="dashMeetingByTypeLabel">📚 สถิติประชุม/อบรม แยกตามประเภท (ทั้งกลุ่มงาน)</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="dashMeetingByTypeCards"></div>
   </div>
 
-  <!-- ===== หมวด 3: แนวโน้มและรายละเอียดรายบุคคล ===== -->
+  <!-- ===== หมวด 4: แนวโน้มและรายละเอียดรายบุคคล ===== -->
   <div class="flex items-center gap-3 mb-3">
     <h2 class="text-xs font-bold uppercase tracking-wider text-teal-700">แนวโน้มและรายละเอียดรายบุคคล</h2>
     <div class="flex-1 h-px bg-slate-200"></div>
