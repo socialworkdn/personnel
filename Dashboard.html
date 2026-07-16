@@ -1,6 +1,6 @@
 <template id="tpl-dashboard">
 <div>
-  <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+  <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
     <div>
       <h1 class="text-xl font-bold text-slate-800">แดชบอร์ดภาพรวม</h1>
       <p class="text-sm text-slate-500" id="dashMonthLabel">กำลังโหลด...</p>
@@ -16,7 +16,12 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+  <!-- ===== หมวด 1: ภาพรวม P4P (ตัวเลขหลัก) ===== -->
+  <div class="flex items-center gap-3 mb-3">
+    <h2 class="text-xs font-bold uppercase tracking-wider text-teal-700">ภาพรวม P4P</h2>
+    <div class="flex-1 h-px bg-slate-200"></div>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
     <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-teal-600">
       <div class="text-xs text-slate-500" id="dashBudgetLabel">งบประมาณจัดสรรลงกลุ่ม (บาท)</div>
       <div class="text-2xl font-bold text-slate-800 mt-1" id="dashBudget">-</div>
@@ -35,63 +40,73 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-    <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-sky-500">
+  <!-- ===== หมวด 2: การลา และ การประชุม/อบรม/สัมมนา ===== -->
+  <div class="flex items-center gap-3 mb-3">
+    <h2 class="text-xs font-bold uppercase tracking-wider text-teal-700">การลา และการประชุม/อบรม/สัมมนา</h2>
+    <div class="flex-1 h-px bg-slate-200"></div>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+    <div class="bg-white rounded-xl shadow-sm p-3.5 border-l-4 border-sky-500">
       <div class="text-xs text-slate-500">🏖️ ลาวันนี้</div>
-      <div class="text-2xl font-bold text-slate-800 mt-1" id="dashOnLeaveTodayCount">-</div>
+      <div class="text-xl font-bold text-slate-800 mt-1" id="dashOnLeaveTodayCount">-</div>
     </div>
-    <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-orange-500">
+    <div class="bg-white rounded-xl shadow-sm p-3.5 border-l-4 border-orange-500">
       <div class="text-xs text-slate-500">⏳ ใบลารออนุมัติ</div>
-      <div class="text-2xl font-bold text-slate-800 mt-1" id="dashPendingLeaveCount">-</div>
+      <div class="text-xl font-bold text-slate-800 mt-1" id="dashPendingLeaveCount">-</div>
     </div>
-    <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-slate-400">
-      <div class="text-xs text-slate-500" id="dashLeaveDaysLabel">📅 วันลาสะสมเดือนนี้ (ทั้งกลุ่มงาน)</div>
-      <div class="text-2xl font-bold text-slate-800 mt-1" id="dashLeaveDaysCount">-</div>
-      <div class="text-[11px] text-slate-400 mt-0.5">นับเฉพาะที่อนุมัติแล้ว</div>
+    <div class="bg-white rounded-xl shadow-sm p-3.5 border-l-4 border-slate-400">
+      <div class="text-xs text-slate-500 leading-snug" id="dashLeaveDaysLabel">📅 วันลาสะสมเดือนนี้</div>
+      <div class="text-xl font-bold text-slate-800 mt-1" id="dashLeaveDaysCount">-</div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm p-3.5 border-l-4 border-indigo-500">
+      <div class="text-xs text-slate-500 leading-snug" id="dashMeetingCountLabel">📚 ประชุม/อบรม เดือนนี้</div>
+      <div class="text-xl font-bold text-slate-800 mt-1" id="dashMeetingCount">-</div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm p-3.5 border-l-4 border-purple-500">
+      <div class="text-xs text-slate-500 leading-snug" id="dashMeetingDaysLabel">🗓️ วันเข้าร่วมเดือนนี้</div>
+      <div class="text-xl font-bold text-slate-800 mt-1" id="dashMeetingDays">-</div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm p-3.5 border-l-4 border-amber-500">
+      <div class="text-xs text-slate-500 leading-snug">⏳ คำขอประชุมฯ รออนุมัติ</div>
+      <div class="text-xl font-bold text-slate-800 mt-1" id="dashPendingMeetingCount">-</div>
+    </div>
+  </div>
+  <p class="text-[11px] text-slate-400 -mt-3 mb-5">ตัวเลขด้านบนนับเฉพาะรายการที่อนุมัติแล้วเท่านั้น เว้นแต่ระบุเป็นอย่างอื่น</p>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+    <div class="bg-white rounded-xl shadow-sm p-4">
+      <h3 class="font-semibold text-slate-700 mb-3 text-sm" id="dashLeaveByTypeLabel">📊 สถิติวันลาแยกตามประเภท (ทั้งกลุ่มงาน)</h3>
+      <div class="grid grid-cols-2 gap-3" id="dashLeaveByTypeCards"></div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm p-4">
+      <h3 class="font-semibold text-slate-700 mb-3 text-sm">🏖️ วันนี้มีใครลาบ้าง</h3>
+      <div id="dashOnLeaveTodayList" class="flex flex-wrap gap-2"></div>
+      <div id="dashOnLeaveTodayEmpty" class="hidden text-sm text-slate-400">วันนี้ไม่มีผู้ลา</div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm p-4">
+      <h3 class="font-semibold text-slate-700 mb-3 text-sm" id="dashMeetingByTypeLabel">📚 สถิติประชุม/อบรม แยกตามประเภท (ทั้งกลุ่มงาน)</h3>
+      <div class="grid grid-cols-2 gap-3" id="dashMeetingByTypeCards"></div>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-    <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-indigo-500">
-      <div class="text-xs text-slate-500" id="dashMeetingCountLabel">📚 การประชุม/อบรม/สัมมนาเดือนนี้ (ทั้งกลุ่มงาน)</div>
-      <div class="text-2xl font-bold text-slate-800 mt-1" id="dashMeetingCount">-</div>
-      <div class="text-[11px] text-slate-400 mt-0.5">นับเฉพาะที่อนุมัติแล้ว</div>
-    </div>
-    <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-purple-500">
-      <div class="text-xs text-slate-500" id="dashMeetingDaysLabel">🗓️ รวมจำนวนวันที่เข้าร่วมเดือนนี้</div>
-      <div class="text-2xl font-bold text-slate-800 mt-1" id="dashMeetingDays">-</div>
-      <div class="text-[11px] text-slate-400 mt-0.5">นับเฉพาะที่อนุมัติแล้ว</div>
-    </div>
-    <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 border-amber-500">
-      <div class="text-xs text-slate-500">⏳ คำขอเข้าร่วมประชุมฯ รออนุมัติ</div>
-      <div class="text-2xl font-bold text-slate-800 mt-1" id="dashPendingMeetingCount">-</div>
-    </div>
+  <!-- ===== หมวด 3: แนวโน้มและรายละเอียดรายบุคคล ===== -->
+  <div class="flex items-center gap-3 mb-3">
+    <h2 class="text-xs font-bold uppercase tracking-wider text-teal-700">แนวโน้มและรายละเอียดรายบุคคล</h2>
+    <div class="flex-1 h-px bg-slate-200"></div>
   </div>
-
-  <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
-    <h2 class="font-semibold text-slate-700 mb-3" id="dashLeaveByTypeLabel">📊 สถิติวันลาแยกตามประเภท (ทั้งกลุ่มงาน) — นับเฉพาะที่อนุมัติแล้ว</h2>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="dashLeaveByTypeCards"></div>
-  </div>
-
-  <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
-    <h2 class="font-semibold text-slate-700 mb-3">🏖️ วันนี้มีใครลาบ้าง</h2>
-    <div id="dashOnLeaveTodayList" class="flex flex-wrap gap-2"></div>
-    <div id="dashOnLeaveTodayEmpty" class="hidden text-sm text-slate-400">วันนี้ไม่มีผู้ลา</div>
-  </div>
-
   <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
     <div class="lg:col-span-3 bg-white rounded-xl shadow-sm p-4">
-      <h2 class="font-semibold text-slate-700 mb-3" id="dashStaffChartLabel">แต้มรวมของเจ้าหน้าที่ (เดือนนี้)</h2>
+      <h3 class="font-semibold text-slate-700 mb-3 text-sm" id="dashStaffChartLabel">แต้มรวมของเจ้าหน้าที่ (เดือนนี้)</h3>
       <canvas id="chartStaffPoints" height="220"></canvas>
     </div>
     <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-4">
-      <h2 class="font-semibold text-slate-700 mb-3" id="dashTrendChartLabel">แนวโน้มแต้มรวมกลุ่มงาน (6 เดือนล่าสุด)</h2>
+      <h3 class="font-semibold text-slate-700 mb-3 text-sm" id="dashTrendChartLabel">แนวโน้มแต้มรวมกลุ่มงาน (6 เดือนล่าสุด)</h3>
       <canvas id="chartTrend" height="220"></canvas>
     </div>
   </div>
 
   <div class="bg-white rounded-xl shadow-sm p-4 mt-4">
-    <h2 class="font-semibold text-slate-700 mb-3" id="dashTableLabel">ตารางสรุปแต้ม-เงิน รายบุคคล (เดือนนี้)</h2>
+    <h3 class="font-semibold text-slate-700 mb-3 text-sm" id="dashTableLabel">ตารางสรุปแต้ม-เงิน รายบุคคล (เดือนนี้)</h3>
     <div class="overflow-x-auto">
       <table class="w-full text-sm p4p-table">
         <thead>
@@ -115,6 +130,7 @@
   var _chartStaff = null, _chartTrend = null;
   var _dashViewMode = 'month';
   var LEAVE_TYPES_DASH = ['ลาพักผ่อน', 'ลาป่วย', 'ลากิจส่วนตัว', 'ลาคลอดบุตร'];
+  var MEETING_TYPES_DASH = ['ประชุม', 'อบรม', 'สัมมนา', 'หลักสูตรระยะสั้น'];
 
   function initDashboardPage() {
     var now = new Date();
@@ -161,6 +177,7 @@
     document.getElementById('dashMeetingCountLabel').textContent = isYear ? '📚 การประชุม/อบรม/สัมมนาปีนี้ (ทั้งกลุ่มงาน)' : '📚 การประชุม/อบรม/สัมมนาเดือนนี้ (ทั้งกลุ่มงาน)';
     document.getElementById('dashMeetingDaysLabel').textContent = isYear ? '🗓️ รวมจำนวนวันที่เข้าร่วมปีนี้' : '🗓️ รวมจำนวนวันที่เข้าร่วมเดือนนี้';
     document.getElementById('dashLeaveByTypeLabel').textContent = '📊 สถิติวันลาแยกตามประเภท (ทั้งกลุ่มงาน' + (isYear ? ' - ทั้งปี' : ' - เดือนนี้') + ') — นับเฉพาะที่อนุมัติแล้ว';
+    document.getElementById('dashMeetingByTypeLabel').textContent = '📚 สถิติประชุม/อบรม แยกตามประเภท (ทั้งกลุ่มงาน' + (isYear ? ' - ทั้งปี' : ' - เดือนนี้') + ') — นับเฉพาะที่อนุมัติแล้ว';
     document.getElementById('dashStaffChartLabel').textContent = isYear ? 'แต้มรวมของเจ้าหน้าที่ (ทั้งปี)' : 'แต้มรวมของเจ้าหน้าที่ (เดือนนี้)';
     document.getElementById('dashTrendChartLabel').textContent = isYear ? 'แนวโน้มแต้มรวมกลุ่มงาน (12 เดือนของปีนี้)' : 'แนวโน้มแต้มรวมกลุ่มงาน (6 เดือนล่าสุด)';
     document.getElementById('dashTableLabel').textContent = isYear ? 'ตารางสรุปแต้ม-เงิน รายบุคคล (สะสมทั้งปี)' : 'ตารางสรุปแต้ม-เงิน รายบุคคล (เดือนนี้)';
@@ -177,10 +194,24 @@
     document.getElementById('dashPendingLeaveCount').textContent = leave.pendingRequestsCount;
     document.getElementById('dashLeaveDaysCount').textContent = leave.approvedLeaveDaysCount;
 
-    var meeting = data.meeting || { approvedCount: 0, totalDays: 0, pendingRequestsCount: 0 };
+    var meeting = data.meeting || { approvedCount: 0, totalDays: 0, pendingRequestsCount: 0, byType: {} };
     document.getElementById('dashMeetingCount').textContent = meeting.approvedCount;
     document.getElementById('dashMeetingDays').textContent = meeting.totalDays;
     document.getElementById('dashPendingMeetingCount').textContent = meeting.pendingRequestsCount;
+
+    // การ์ดสถิติประชุม/อบรม แยกประเภท
+    var meetingColors = {
+      'ประชุม': 'border-sky-500', 'อบรม': 'border-emerald-500',
+      'สัมมนา': 'border-fuchsia-500', 'หลักสูตรระยะสั้น': 'border-orange-500'
+    };
+    var meetingTypeCardsEl = document.getElementById('dashMeetingByTypeCards');
+    meetingTypeCardsEl.innerHTML = '';
+    MEETING_TYPES_DASH.forEach(function(t) {
+      var card = document.createElement('div');
+      card.className = 'bg-slate-50 rounded-lg p-3 border-l-4 ' + (meetingColors[t] || 'border-slate-400');
+      card.innerHTML = '<div class="text-xs text-slate-500">' + t + '</div><div class="text-xl font-bold text-slate-800 mt-1">' + ((meeting.byType && meeting.byType[t]) || 0) + ' <span class="text-xs font-normal text-slate-400">ครั้ง</span></div>';
+      meetingTypeCardsEl.appendChild(card);
+    });
 
     // การ์ดสถิติวันลาแยกประเภท
     var colors = {
